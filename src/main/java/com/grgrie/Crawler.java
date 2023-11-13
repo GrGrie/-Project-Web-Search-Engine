@@ -25,7 +25,7 @@ public class Crawler extends TimerTask{
     startURL = url;
     maxDepth = this.maxDepth;
     Indexer indexer = new Indexer(encoding);
-    
+
     this.indexer = indexer;
     thread = new Thread(this);
     thread.start();
@@ -42,9 +42,9 @@ public class Crawler extends TimerTask{
     } catch (MalformedURLException e) {
       e.printStackTrace();
     }
-    int currentDepth = -1;
+    int currentDepth = 0;
     while(currentDepth <= maxDepth){   
-      Indexer.printList(queueURL);
+      //Indexer.printList(queueURL);
       try{
         if(queueURL.peek() == null){
           currentDepth++;
@@ -72,5 +72,10 @@ public class Crawler extends TimerTask{
     }
     System.out.println("Finished successfully");
     //System.out.println("Visited this many URLs :: " + visitedURLs.size());
+  }
+
+
+  public long getThreadId(){
+    return thread.getId();
   }
 }
