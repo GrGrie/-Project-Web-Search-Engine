@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en" data-root="/en">
+
+<head>  
+    <meta charset="utf-8">
+    <meta name="author" content='FB Informatik, TU Kaiserslautern'>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/en/css/bootstrap.css" media="all">
+    <link rel="stylesheet" type="text/css" href="/en/css/site.css" media="all">
+    <link rel="stylesheet" type="text/css" href="/en/css/print.css" media="print">
+    <link rel="stylesheet" type="text/css" href="/en/css/font-awesome.css" media="all">
+    <link rel="stylesheet" type="text/css" href="/en/css/font-awesome_002.css" media="all">
+
+    <LINK rel="stylesheet" href="/en/css/all.css" type="text/css" media="all">
+    <LINK rel="icon" href="/en/favicon.ico" type="image/ico">
+
+    <SCRIPT src="/en/js/jquery_003.js"></SCRIPT>
+    <SCRIPT src="/en/js/bootstrap.js"></SCRIPT>
+    <SCRIPT src="/en/js/jquery_004.js"></SCRIPT>
+    <SCRIPT src="/en/js/jquery.js"></SCRIPT>   
+    <SCRIPT src="/en/js/functions.js"></SCRIPT>   
+    <SCRIPT src="/en/js/rendermenu.js"></SCRIPT> 	    
+    <SCRIPT src="/en/js/custom.js"></SCRIPT>
+
+    <link rel=�??canonical�?? href="https://www.cs.uni-kl.de/" />
+    
+    <title>Dept. of Computer Sci.: Computer Science in Kaiserslautern</title>
+    <style>
+    #CD2020 .hotnews_decoration h3 {
+        font-size: 1.5em;
+        margin-top: 0;
+    }
+</style>
+</head>
+<body id="CD2020">
+<!--<div class="banner banner-top">
+        <a href="https://rptu.de/en" target=_blank>
+            <span class="text">Die TU Kaiserslautern und die Universität in Landau wurden am 1.1.2023 zur RPTU.</span>
+        </a>
+    </div>-->
+<div class="container" id="page">
+    <header class="header">
+        <div style="display:flex; justify-content: space-between;">
+            <div class="logo">
+	    	<figure>
+                    <a href="https://rptu.de/en" target=_blank tabindex="2" title="Zur RPTU-Startseite" class="aimg">
+                        <img src="/en/logos/RPTU-2h-800x205-col.png" alt="Logo RPTU" style="">
+                    </a>
+                </figure>
+            </div>
+            <nav>
+                <ul class="serviceNavigation">                        
+                    <li>                    <li class="languageSwitch">
+                        <span class="language fa-globe"><span><A HREF="/." TITLE="German / Deutsch">DE</a></span><span class="langactiv">EN</span></span> 
+                    <li class="search hidden-xs">
+                        <a class="search fa-search" href="/en/suchen/">Search</a>
+                </ul>
+            </nav>
+        </div>
+        <div style="display:flex; justify-content: space-between;">
+            <h2 class="fbName cookieDisabled"><a
+                href="http://www.informatik.uni-kl.de/en">Department of Computer Science at RPTU in Kaiserslautern
+            </a></h2>
+
+            <div class="fblogo hidden-xs"><a href="/en/"><img src="/en/images/logo_fbi_167x60.png" alt="FB Logo"></a></div>
+        </div>
+        <div class="row headerTop">
+            <div class="col-sm-6 col-md-9 mainnav">
+                <div class="navbar-header">
+                    <button class="navbar-toggle menu-trigger collapsed" data-target="#navbar-collapse-1"
+                            data-toggle="collapse" type="button"><span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                </div>
+                <div class="mp-pusher" id="mp-pusher">
+                    <nav class="navbar mp-menu" id="mp-menu">
+                        <div class="collapse navbar-collapse" id="navbar-collapse-1">
+                            <ul class="navbar-nav">
+                                <li class="tukLink"><a class="link col-xs-12" href="/en/">HOME</a></li>
+                            </ul>
+                        </div>
+                    </nav>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-3 groupNav">
+                <div class="dropdown scrollable-menu">
+                    <!-- ################### TOPMENU Informationen für ... ####################### -->
+                    <button class="btnGroupnav dropdown-toggle col-xs-6" data-toggle="dropdown" type="button">
+                        Quick links
+                        <span class="openGroup fa-angle-down"></span>
+		    </button>
+                    <ul class="dropdown-menu">
+                        <li class="qick_nav_xs_separator"><span>Information for</span></li><li><a href="https://informatik.uni-kl.de/en/studium/studierende/" class="fa-users">Current Students</a><li><a href="https://informatik.uni-kl.de/en/studium/bewerber/studienbeginn/" class="fa-file-text">New Students</a></li><li><a href="https://informatik.uni-kl.de/en/studium/bewerber/" class="fa-question-circle-o">Future Students</a></li><li><a href="https://informatik.uni-kl.de/en/studium/bewerber/schulen/" class="fa-pencil">Pupils and Teachers</a></li><li><a href="https://informatik.uni-kl.de/en/forschung/" class="fa-flask">Researchers</a></li>                        
+                        <li class="qick_nav_xs_separator"><span>Studies</span></li><li><a class="fa-map-signs" href="https://informatik.uni-kl.de/en/studium/studiengaenge">Courses of Studies</a></li><li><a class="fa-bookmark" href="https://informatik.uni-kl.de/en/studium/lehrveranstaltungen/">Lectures</a></li><li><a class="fa-book" href="https://informatik.uni-kl.de/en/studium/lehrveranstaltungen/modulhb/">Module Handbook</a></li><li><a class="fa-balance-scale" href="https://informatik.uni-kl.de/en/studium/studierende/ordnungen">Examination Regulations</a></li>
+                        <li class="qick_nav_xs_separator"><span>Structure</span></li><li><A class="fa-briefcase" HREF="https://informatik.uni-kl.de/organisation/ags/" title="Arbeitsgruppen des FB Informatik">Arbeitsgruppen</A></li><li><A class="fa-building" HREF="http://dekanat.cs.uni-kl.de/en/" TARGET="_blank" title="Dekanat Informatik">Dekanat</A></li><li><A class="fa-laptop" HREF="http://sci.cs.uni-kl.de/" TARGET="_blank" title="Service-Center Informatik (SCI)">SCI</A></li><li><A class="fa-archive" HREF="http://www.fachschaft.cs.uni-kl.de" TARGET="_blank" title="Fachschaft Informatik">Fachschaft</A></li>
+                        <li class="qick_nav_xs_separator"><span>Service</span></li><li><a href="https://www.mensa-kl.de" TARGET="_blank" class="fa-cutlery">Mensa</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="search visible-xs">                                
+                <a class="openSearch fa-search" href="/en/suchen/">Search</a>                
+            </div>
+        </div><!--googleon: all-->
+    </header><!-- ################# BREADCRUMP ###################### -->
+    <nav>
+        <ul class="breadCrumb">
+            <li><a href="https://www.uni-kl.de" target=_blank title="TU Kaiserslautern">TUK</a> | <a href="https://rptu.de/en" target=_blank title="RPTU in Kaiserslautern" class="no_before">RPTU</a> in Kaiserslautern <a href="https://www.cs.uni-kl.de/en" title="Department of Computer Science">Department of Computer Science</a> 
+        </ul>
+    </nav>    
+   <!-- ################# INHALT ###################### -->
+
+    <main id="inhalt" class="flex_container">        
+        <h2 style="flex: 1 100%;">Computer Science in Kaiserslautern</h2>
+        <div style="flex: 1;">	
+	<div class="flex_card">
+		<section class="card">
+			<header><img src="/en/images/studium.png" alt=""></header>
+			<H3>Study</H3>
+			<p>
+			Kaiserslautern is one of the largest IT locations in Germany 
+			with the <B>Department of Computer Science</B> forming its core. 
+			
+			<p>
+			Since the department was founded in 1974 
+			<A HREF="/en/forschung/aninstitute/">three renowned research institutes</a> have 
+			evolved from its successful international work.
+			
+
+			With <A HREF="/en/organisation/ags/">30 professors</a> 
+			the department covers all areas of computer science and can embrace the importance 
+			of computer science as a key skill for virtually all sciences at the TU. The department 
+			can also take on the central role of 
+			<A HREF="/en/forschung/">computer science research and development</a> 
+			in Kaiserslautern in the future. 
+			<nav>
+				<ul>
+					<li class="qick_nav_xs_separator"><span>Studies</span></li><li><a class="fa-map-signs" href="https://informatik.uni-kl.de/en/studium/studiengaenge">Courses of Studies</a></li><li><a class="fa-bookmark" href="https://informatik.uni-kl.de/en/studium/lehrveranstaltungen/">Lectures</a></li><li><a class="fa-book" href="https://informatik.uni-kl.de/en/studium/lehrveranstaltungen/modulhb/">Module Handbook</a></li><li><a class="fa-balance-scale" href="https://informatik.uni-kl.de/en/studium/studierende/ordnungen">Examination Regulations</a></li>
+				</ul>
+			</nav>				
+		</section>
+	</div>
+	<div class="flex_card">
+		<section class="card">
+			<header><img src="/en/images/forschung.png" alt=""></header>
+			<H3>Research</H3>
+			<p>
+            The Department of Computer Science and the institutes in Kaiserslautern carry out 
+	    <A HREF="/en/forschung/">basic and application 
+            research</a> in many modern subject areas of computer science. 
+    	    The main focus is the engineering-based 
+            construction of informatics systems.>        
+			<nav>
+				<ul>
+					<li class="qick_nav_xs_separator"><span>Research</span></li><li><a class="fa-angle-double-right" href="https://informatik.uni-kl.de/en/forschung/forschungsbereiche/">Research Projects</a></li><li><a class="fa-angle-double-right" href="https://informatik.uni-kl.de/en/organisation/ags/">Professors</a></li><li><a class="fa-angle-double-right"  href="https://phd.cs.uni-kl.de">PhD Program</a></li><li><a class="fa-angle-double-right"  href="https://informatik.uni-kl.de/en/forschung/promotionen">Completed PhDs</a></li><li><a class="fa-angle-double-right"  href="https://informatik.uni-kl.de/en/forschung/stellen">Jobs and Career</a></li><li><a class="fa-angle-double-right"  href="https://informatik.uni-kl.de/en/forschung/kolloquien">Colloquia</a></li>
+				</ul>
+			</nav>		
+		</section>
+	</div>
+	<div class="flex_card">
+		<section class="card">
+			<header><img src="/en/images/fb-inf-building.png" alt=""></header>
+			<h3>Our Department</h3>
+			<p>
+			Kaiserslautern is one of the largest IT locations in Germany with 
+			the <B>Department of Computer Science</B> forming its core. 
+			<p>
+			Since the department was founded in 1974 
+			<A HREF="/en/forschung/aninstitute/">three renowned research institutes</a> have 
+			evolved from its successful international work. 
+			<p>
+			With <A HREF="/en/organisation/ags/">30 professors</a> the 
+			department covers all areas of computer science and can embrace the importance 
+			of computer science as a key skill for virtually all sciences at the TU. The department 
+			can also take on the central role of 
+			<A HREF="/en/forschung/">computer science research and development</a> 
+			in Kaiserslautern in the future. 	
+			<nav>
+				<ul>
+					<li class="qick_nav_xs_separator"><span>Structure</span></li><li><A class="fa-briefcase" HREF="https://informatik.uni-kl.de/organisation/ags/" title="Arbeitsgruppen des FB Informatik">Arbeitsgruppen</A></li><li><A class="fa-building" HREF="http://dekanat.cs.uni-kl.de/en/" TARGET="_blank" title="Dekanat Informatik">Dekanat</A></li><li><A class="fa-laptop" HREF="http://sci.cs.uni-kl.de/" TARGET="_blank" title="Service-Center Informatik (SCI)">SCI</A></li><li><A class="fa-archive" HREF="http://www.fachschaft.cs.uni-kl.de" TARGET="_blank" title="Fachschaft Informatik">Fachschaft</A></li>
+				</ul>
+			</nav>
+		</section>
+	</div>
+</div>
+<div class="flex_card" style="flex: 1;">
+	<section class="card">
+		<!-- generiert: -->
+
+<div class=hotnews_decoration><H3>Spotlights<span style="font-size:0.5em;color:#888;font-weight:normal;margin-left:2em;">[<A style="font-weight:normal;" href="/aktuelles">more News</A>]</span></H3></div>
+
+<div class=hotnews>
+
+<article class='hotnews'>
+<div class=floatright>   <a href="aktuelles/newsletter_2023-07/"></a>  </div> <h3>Newsletter of the Department of Computer Science</h3> <p>Dear Readers, once or twice a semester we want to inform you about important and interesting news from the Department and the RPTU. Enjoy reading the publicity committee of the Department of Computer Science  
+</article>
+<HR>
+
+
+<article class='hotnews'>
+<div class=floatright>     <a href="https://rptu.de/newsroom/detail/news/rptu-und-wirtschaftsministerin-schmitt-praesentiert-autonom-fahrenden-unimog" target=_blank>     <img style="width: 150px;" src="aktuelles/hotnews_material/Unimog_RobotikLab.jpg" alt="Autonomer Unimog">   </a>  </div> <h3>RPTU und Wirtschaftsministerin Schmitt präsentieren autonom fahrenden Unimog</h3> Die rheinland-pfälzische Wirtschaftsministerin Daniela Schmitt hat gemeinsam mit Professor Dr. Karsten Berns die Ergebnisse des Projekts zur Entwicklung eines autonom fahrenden Unimog bei einer Live-Demonstration in Kaiserslautern vorgestellt.  Die Forschung des Lehrstuhls Robotersysteme (RRLab) im Fachbereich Informatik der Rheinland-Pfälzischen Technischen Universität Kaiserslautern-Landau wurde vom Ministerium mit rund 800.000 Euro unterstützt.  Das Projekt konzentrierte sich auf den Einsatz des Unimog in schwierigem Gelände abseits von Stra�?en, wie beispielsweise im Weinbau. <br> Zum  Beitrag in <a href="https://www.1730live.de/mit-sensoren-durchs-gelaende/?fbclid=PAAaafPBBn2UgdG8K8IgMlEuG0rvNYtyi0BjjjvLRQDIv6e_2Vc5joJHU5TG8" target=_blank>SAT1</a>  
+</article>
+<HR>
+
+
+<article class='hotnews'>
+<div class=floatright>     <img style="width: 150px;" src="aktuelles/hotnews_material/waveren.png" alt="Prof. Dr. Leo van Waveren">  </div>  <h3>Prof. Dr. Leo van Waveren im SWR3 Podcast zum Thema ChatGPT</h3> Herr Prof. van Waveren, Leiter der AG Fachdidaktik der Technik an unserem Fachbereich und Mitglied im Zentrum für Lehrerbildung spricht am 08.05.2023 zum Thema Lehrerausbildung  "<a href="https://www.swr3.de/media-assets/was-lernen-die-lehrenden-100.html" target=_blank>Was lernen die Lehrenden?</a>" in einem SWR3 Podcast.   
+</article>
+<HR>
+
+
+<article class='hotnews'>
+<div class=floatright>     <a href="https://rptu.de/newsroom/detail/news/wissenschaftsministerium-foerdert-quanteninitiative-rheinland-pfalz-mit-12-millionen-euro" target=_blank></a>  </div> <h3>Wissenschaftsministerium fördert �??Quanteninitiative Rheinland-Pfalz�?? mit 1,2 Millionen Euro</h3> Um die Quantenforschung in Rheinland-Pfalz stärker zu vernetzen und zu koordinieren, schlie�?en sich die Universitäten in Kaiserslautern und Mainz mit dem Deutschen Forschungszentrum für Künstliche Intelligenz (DFKI) sowie dem Fraunhofer-Institut für Techno- und Wirtschaftsmathematik ITWM zur Quanteninitiative Rheinland-Pfalz, kurz QUIP, zusammen. Ziel dabei ist es auch, den wissenschaftlichen Nachwuchs in den Quantentechnologien gezielt auszubilden und für dieses neue Wirtschaftsfeld fit zu machen. Dazu sind unter anderem ein Graduiertenkolleg und Sommerschulen geplant. Ausländische Studierende sollen zudem bei Forschungsaufenthalten Einblick in die Arbeiten an den beteiligten Einrichtungen erhalten. Das rheinland-pfälzische Wissenschaftsministerium fördert QUIP für drei Jahre mit rund 1,2 Millionen Euro.  Den Förderbescheid hat Wissenschaftsminister Clemens Hoch am 17. März an der Rheinland-Pfälzischen Technischen Universität (RPTU) in Kaiserslautern übergeben. 
+</article>
+</div>
+	</section>       
+</div>
+
+<!--
+<div class="flex_card">
+	<section class="card">
+		<H3>Umfeld</H3>
+		<p>
+		Die 
+		<a href="http://www.kaiserslautern.de/" target=_blank>Stadt Kaiserslautern</a>
+		hat sich in den letzten Jahrzehnten zu einer lebendigen Universitätsstadt
+		mit vielfältigen und attraktiven Freizeitangeboten entwickelt.
+
+
+		<P>
+		Darüber hinaus findet man auch direkt auf dem 
+		<a href="https://www.uni-kl.de/studium/vor-dem-studium/leben-an-der-tuk/leben-auf-dem-campus/" target=_blank>Campus</a>
+		der Universität viele Kultur- und und Freizeitangebote,
+		die zusammen mit den vielfältig ausgerichteten 
+		<a href="https://www.uni-kl.de/studium/vor-dem-studium/leben-an-der-tuk/studentische-gruppen/" target=_blank>studentischen Gruppen</a>
+		für jeden etwas bieten.
+	</section>
+</div>
+-->
+
+                                                                     
+    </main>
+</div>
+<footer class="footer">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-3 col-md-push-9 socialMediaFooter">
+                <div class="logo">
+                    <a href="./" title="Zur Startseite">
+
+	                <figure>
+        	            <a href="https://rptu.de/en" target=_blank tabindex="2" title="Zur RPTU-Startseite" class="aimg">
+                	        <img src="/en/logos/RPTU-2h-800x205-col.png" alt="Logo RPTU" width="200" height="39" style="">
+                   	   </a>
+                	</figure>
+                </div>
+                <!--<div class="socialMedia">
+                    <ul>
+                        <li>
+                            <figure>
+                                <a href="https://www.uni-kl.de/newsfeeds/" target="_blank"><img
+                                        src="/en/logos/rss.png"
+                                        alt="Alle Nachrichten-Feeds (RSS) der TU Kaiserslautern auf einen Blick"
+                                        width="35" height="35"></a>
+                            </figure>
+                    </ul>
+                </div>-->
+                <div class="copyright">
+			<p>© Service-Center Informatik,<br> RPTU Kaiserslautern-Landau
+                </div>
+            </div><!--googleoff: all-->
+            <div class="col-md-9 col-md-pull-3">
+                <div class="row">
+                    <nav>
+                        <ul class="footernavigation">
+                            <li class="col-md-4">
+                                <p>Schnellzugriff
+                                <ul class="secondLevel">
+                                    <li class="qick_nav_xs_separator"><span>Studies</span></li><li><a class="fa-map-signs" href="https://informatik.uni-kl.de/en/studium/studiengaenge">Courses of Studies</a></li><li><a class="fa-bookmark" href="https://informatik.uni-kl.de/en/studium/lehrveranstaltungen/">Lectures</a></li><li><a class="fa-book" href="https://informatik.uni-kl.de/en/studium/lehrveranstaltungen/modulhb/">Module Handbook</a></li><li><a class="fa-balance-scale" href="https://informatik.uni-kl.de/en/studium/studierende/ordnungen">Examination Regulations</a></li>
+					<!--
+                                        <li class="fa-angle-double-right">
+                                            <a href="XXX">XXX</a>
+                                           -->
+                                </ul>
+                            <li class="col-md-4">
+                                <p>Service
+                                <ul class="secondLevel">
+                                    <li class="qick_nav_xs_separator"><span>Structure</span></li><li><A class="fa-briefcase" HREF="https://informatik.uni-kl.de/organisation/ags/" title="Arbeitsgruppen des FB Informatik">Arbeitsgruppen</A></li><li><A class="fa-building" HREF="http://dekanat.cs.uni-kl.de/en/" TARGET="_blank" title="Dekanat Informatik">Dekanat</A></li><li><A class="fa-laptop" HREF="http://sci.cs.uni-kl.de/" TARGET="_blank" title="Service-Center Informatik (SCI)">SCI</A></li><li><A class="fa-archive" HREF="http://www.fachschaft.cs.uni-kl.de" TARGET="_blank" title="Fachschaft Informatik">Fachschaft</A></li>
+                                    <li class="qick_nav_xs_separator"><span>Service</span></li><li><a href="https://www.mensa-kl.de" TARGET="_blank" class="fa-cutlery">Mensa</a></li>
+                                </ul>
+                            <li class="col-md-4">
+                                <p>Kontakt & Info
+                                <ul class="secondLevel">
+                                    <li><a href="/en/kontakt/" title="Kontakt">Kontakt</a>
+                                    <!-- für diese Beiden darf kein LI angegeben werden, da dieses schon über die Variable kommt -->
+				                    <li><a href="https://rptu.de/datenschutzerklaerung" target="blank">Datenschutzerklärung</a></li>                          
+                                    <li><a href="https://rptu.de/impressum" target="_blank">Imprint</a></li>
+                                    <li><a href="https://rptu.de/datenschutz-und-soziale-medien-1">Datenschutz und soziale
+                                            Medien</a>
+                                </ul>
+                        </ul>
+                        <div class="clearfix"></div>
+                    </nav>
+                </div>
+            </div><!--googleon: all-->
+        </div>
+    </div>
+</footer>
+<a class="topLink fa-angle-up" href="#" style="display: none;">Zum Seitenanfang</a>
+</body>
+</html>
