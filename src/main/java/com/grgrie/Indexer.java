@@ -152,8 +152,7 @@ public class Indexer {
         InputStream in = urlConnection.getInputStream();
         
         InputStreamReader inputReader = new InputStreamReader(in, encoding);
-        //FileOutputStream fileOutput = new FileOutputStream("parsed" + numberOfParsedFile + ".txt");
-        //HTMLEditorKit.ParserCallback parserCallback = new Parser(new OutputStreamWriter(fileOutput, Charset.forName(encoding)));
+        
         HTMLEditorKit.ParserCallback parserCallback = new Parser();
         parser.parse(inputReader, parserCallback, true);
         List<String> result = stemIt(parsedString);
