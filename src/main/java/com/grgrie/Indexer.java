@@ -23,7 +23,7 @@ import com.shekhargulati.urlcleaner.UrlCleaner;
 
 public class Indexer {
 
-    private static int numberOfParsedFile = 0;
+    private String parsedString = "";
     private Boolean isInH1 = false;
     private Boolean isInH2 = false;
     private Boolean isInH3 = false;
@@ -44,8 +44,8 @@ public class Indexer {
 
 
     public Indexer (String encoding){
-        fillBannedWords(bannedWords);
-        this.encoding = encoding;
+      fillBannedWords(bannedWords);
+      this.encoding = encoding;
     }
 
     protected void indexPage(URL url, String baseUrl){
@@ -59,12 +59,6 @@ public class Indexer {
     }
 
     class Parser extends HTMLEditorKit.ParserCallback {
-
-    private Writer out;
-
-    public Parser(Writer out) {
-        this.out = out;
-    }
 
     public void handleStartTag(HTML.Tag tag, MutableAttributeSet attributes, int position) {
 
@@ -90,7 +84,6 @@ public class Indexer {
               address = baseUrl + "/" + address;
             } else if(!address.startsWith("#") && !address.startsWith("./") && !address.startsWith("mailto")){
                 //UrlCleaner.normalizeUrl(address);
-                //System.out.println(address);
                 links.add(address); 
               }
             }
@@ -123,40 +116,70 @@ public class Indexer {
     }
 
   private void parseHTML(char[] text){ 
-    String parsedString = "";
+    String parsed = "";
     for(int i = 0; i < text.length; i++){
       if(text[i] != ' ' && text[i] != ',' && text[i] != '.' && text[i] != ':' && text[i] != ';' && text[i] != '|' && text[i] != '[' && text[i] != '&' && text[i] != '!'
       && text[i] != ']' && text[i] != '"' && text[i] != '?' && text[i] != '©' && text[i] != '>' && text[i] != '<' && text[i] != '“' && text[i] != '„' && text[i] != '('
       && text[i] != ')' && text[i] != '{' && text[i] != '}' && text[i] != '=' && text[i] != '\'' && text[i] != '\"' && text[i] != '-' && text[i] != '+' && text[i] != '%'
       && text[i] != '*' && text[i] != '$' && text[i] != '/' && text[i] != '\b')
-          parsedString += text[i];
+          parsed += text[i];
       else{
         text[i] = '\n';
         if(i != 0 && text[i-1] != '\n') {
           parsedString += "\n";
-          try {
-          out.write(parsedString.toLowerCase());
-          out.flush();
-          parsedString = "";
-        } catch (IOException e) {
-          e.printStackTrace();
-        }}
+          parsedString = parsedString + parsed;
+          parsed = "";
+        }
       }
       if(i == text.length - 1) {                                              // Handling last word on the page case
-        try {
         parsedString += '\n';
         if(parsedString != null && !parsedString.equals("\n")){
-          out.write(parsedString.toLowerCase());
-          out.flush(); 
+          parsedString = parsedString + parsed;
+          parsed = ""; 
         }
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
     }
     }
     
   }
 }
+  
+      public void parse() throws IOException {
+        GetterParser kit = new GetterParser();
+        HTMLEditorKit.Parser parser = kit.getParser();
+
+        URLConnection urlConnection = url.openConnection();
+        urlConnection.setDoInput(true);
+        InputStream in = urlConnection.getInputStream();
+        
+        InputStreamReader inputReader = new InputStreamReader(in, encoding);
+        //FileOutputStream fileOutput = new FileOutputStream("parsed" + numberOfParsedFile + ".txt");
+        //HTMLEditorKit.ParserCallback parserCallback = new Parser(new OutputStreamWriter(fileOutput, Charset.forName(encoding)));
+        HTMLEditorKit.ParserCallback parserCallback = new Parser();
+        parser.parse(inputReader, parserCallback, true);
+        List<String> result = stemIt(parsedString);
+    }
+
+
+    private List<String> stemIt(String stringToStem) throws IOException{
+      List<String> fileStrings = new ArrayList<>();
+      String[] subStrings = parsedString.split("\n");
+      Stemmer stem = new Stemmer();
+      char[] stringToCharArray;
+      for(String subString : subStrings){
+        stringToCharArray = subString.toLowerCase().toCharArray();
+        stem.add(stringToCharArray, stringToCharArray.length);
+        stem.stem();
+        if(!stem.toString().equals("is")){
+          if(!bannedWords.contains(stem.toString().trim())){  
+          fileStrings.add(stem.toString());
+        }
+        } 
+      }
+      //printList(fileStrings);
+      return fileStrings;
+      
+    }
+
   private void fillBannedWords(ArrayList<String> bannedWords){
     this.bannedWords = bannedWords;
     FileReader fr;
@@ -175,46 +198,6 @@ public class Indexer {
       e.printStackTrace();
     }
   }
-      public void parse() throws IOException {
-        GetterParser kit = new GetterParser();
-        HTMLEditorKit.Parser parser = kit.getParser();
-
-        URLConnection urlConnection = url.openConnection();
-        urlConnection.setDoInput(true);
-        InputStream in = urlConnection.getInputStream();
-
-        // HttpURLConnection httpURLConnection = 
-        // httpURLConnection.connect();
-        // InputStream in = httpURLConnection.getInputStream();
-        
-        InputStreamReader inputReader = new InputStreamReader(in, encoding);
-        FileOutputStream fileOutput = new FileOutputStream("parsed" + numberOfParsedFile + ".txt");
-        HTMLEditorKit.ParserCallback parserCallback = new Parser(new OutputStreamWriter(fileOutput, Charset.forName(encoding)));
-        parser.parse(inputReader, parserCallback, true);
-        FileReader file = new FileReader("parsed" + ".txt");
-        stemIt(file);
-    }
-
-
-    private void stemIt(FileReader file) throws IOException{
-      List<String> fileStrings = new ArrayList<>();
-      Stemmer stem = new Stemmer();
-      Scanner sc = new Scanner(file).useDelimiter("\\Z");
-      char[] stringToCharArray;
-      String line;
-      while(sc.hasNext()){
-        line = sc.nextLine();
-        stringToCharArray = line.toCharArray();
-        stem.add(stringToCharArray, stringToCharArray.length);
-        stem.stem();
-        if(!stem.toString().equals("is")){
-          if(!bannedWords.contains(stem.toString().trim())){  
-          fileStrings.add(stem.toString());
-        }
-        } 
-      }
-      //printList(fileStrings);
-    }
 
   public static void printList(List<String> list){
     for(int i = 0; i < list.size(); i++)
@@ -223,6 +206,10 @@ public class Indexer {
 
   public List<String> getLinks(){
     return links;
+  }
+
+  public void printResultParsedString(){
+    System.out.println(parsedString);
   }
 }
 

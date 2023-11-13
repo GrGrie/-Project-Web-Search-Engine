@@ -13,7 +13,7 @@ public class App
     {
         String url = "https://www.cs.rptu.de/en";
         System.out.println( "Starting the job" );
-        Crawler crawl = new Crawler(url, 1);
+        Crawler crawl = new Crawler(url, 0);
         DBhandler db = new DBhandler(); 
         //db.initDB("DBIS");
         db.connectTo("DBIS");
