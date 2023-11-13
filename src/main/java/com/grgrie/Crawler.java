@@ -71,7 +71,6 @@ public class Crawler extends TimerTask{
       }
     }
     System.out.println("Finished successfully");
-    //System.out.println("Visited this many URLs :: " + visitedURLs.size());
   }
 
 
