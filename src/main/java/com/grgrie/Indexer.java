@@ -12,8 +12,10 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 import javax.swing.text.MutableAttributeSet;
 import javax.swing.text.html.HTML;
@@ -35,6 +37,8 @@ public class Indexer {
     private Boolean isInSpanText = false;
     private Boolean isInA = false;
     private Boolean isInLi = false;
+    private Boolean isInUL = false;
+    private Boolean isInAHREF = false;
 
     protected List<String> links = new ArrayList<>();
     private ArrayList<String> bannedWords = new ArrayList<>();
@@ -50,7 +54,7 @@ public class Indexer {
 
     protected void indexPage(URL url, String baseUrl){
         this.url = url;
-        this.baseUrl = baseUrl;
+        this.baseUrl = baseUrl.substring(0, baseUrl.indexOf("/", 8));
         try {
             parse();
         } catch (IOException e) {
@@ -72,23 +76,35 @@ public class Indexer {
       if(tag == HTML.Tag.TITLE) isInTitle = true;
       if(tag == HTML.Tag.SPAN) isInSpanText = true;
       if(tag == HTML.Tag.LI) isInLi = true;
+      if(tag == HTML.Tag.UL) isInUL = true;
 
       // Handling HREF links
-      if(tag == HTML.Tag.A) {
+      if(tag == HTML.Tag.A || tag == HTML.Tag.LI) {
         isInA = true;
         if(attributes.getAttribute(HTML.Attribute.HREF) != null){
+          isInAHREF = true;
           String address = (String) attributes.getAttribute(HTML.Attribute.HREF);
+          if(!address.startsWith("#") && !address.startsWith("./") && !address.startsWith("mailto:") && !address.startsWith("/.")){
+            if(address.contains(" "))
+              address = address.replaceAll(" ", "%20");
             if(address.startsWith("/")){
               address = baseUrl + address;
-            } else if(address.startsWith("a")){  // Hardcode for one case of https://cs.uni-kl.de/en cuz there's a link starting straight with letter 'a'
+            } else if(!address.contains("/") && !baseUrl.contains(address)){  
               address = baseUrl + "/" + address;
-            } else if(!address.startsWith("#") && !address.startsWith("./") && !address.startsWith("mailto")){
-                //UrlCleaner.normalizeUrl(address);
-                links.add(address); 
+            } else if("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".contains(address.substring(0,1)) && !address.startsWith("http")){
+              address = baseUrl + "/" + address;
+            }
+            if(address.contains("bit.ly")){
+              try {
+                address = UrlCleaner.unshortenUrl(address);
+              } catch (IOException e) {
+                e.printStackTrace();
               }
             }
-            
-        }
+              links.add(address);
+          }
+        }        
+      }
         
     
     }
@@ -106,12 +122,13 @@ public class Indexer {
         if(tag == HTML.Tag.SPAN) isInSpanText = false;
         if(tag == HTML.Tag.A) isInA = false;
         if(tag == HTML.Tag.LI) isInLi = false;
+        if(tag == HTML.Tag.UL) isInUL = false;
     }
 
     public void handleText(char[] text, int position) {
 
-        if(isInH3 || isInH1 || isInH2 || isInH4 || isInH5 || isInH6 || isInP || isInTitle || isInSpanText || isInA || isInLi)
-            parseHTML(text);
+        if(isInH3 || isInH1 || isInH2 || isInH4 || isInH5 || isInH6 || isInP || isInTitle || isInSpanText || isInLi || isInUL || (isInA || isInAHREF))
+          parseHTML(text);
 
     }
 
@@ -120,8 +137,8 @@ public class Indexer {
     for(int i = 0; i < text.length; i++){
       if(text[i] != ' ' && text[i] != ',' && text[i] != '.' && text[i] != ':' && text[i] != ';' && text[i] != '|' && text[i] != '[' && text[i] != '&' && text[i] != '!'
       && text[i] != ']' && text[i] != '"' && text[i] != '?' && text[i] != '©' && text[i] != '>' && text[i] != '<' && text[i] != '“' && text[i] != '„' && text[i] != '('
-      && text[i] != ')' && text[i] != '{' && text[i] != '}' && text[i] != '=' && text[i] != '\'' && text[i] != '\"' && text[i] != '-' && text[i] != '+' && text[i] != '%'
-      && text[i] != '*' && text[i] != '$' && text[i] != '/' && text[i] != '\b')
+      && text[i] != ')' && text[i] != '{' && text[i] != '}' && text[i] != '=' && text[i] != '\'' && text[i] != '\"' && text[i] != '+' && text[i] != '%'
+      && text[i] != '*' && text[i] != '$' && text[i] != '/')
           parsed += text[i];
       else{
         text[i] = '\n';
@@ -139,24 +156,24 @@ public class Indexer {
         }
     }
     }
-    
   }
 }
   
-      public void parse() throws IOException {
-        GetterParser kit = new GetterParser();
-        HTMLEditorKit.Parser parser = kit.getParser();
+  public void parse() throws IOException {
+    GetterParser kit = new GetterParser();
+    HTMLEditorKit.Parser parser = kit.getParser();
 
-        URLConnection urlConnection = url.openConnection();
-        urlConnection.setDoInput(true);
-        InputStream in = urlConnection.getInputStream();
+    URLConnection urlConnection = url.openConnection();
+    urlConnection.setDoInput(true);
+    urlConnection.setRequestProperty("User-Agent", "Chrome");
+    InputStream in = urlConnection.getInputStream();
         
-        InputStreamReader inputReader = new InputStreamReader(in, encoding);
+    InputStreamReader inputReader = new InputStreamReader(in, encoding);
         
-        HTMLEditorKit.ParserCallback parserCallback = new Parser();
-        parser.parse(inputReader, parserCallback, true);
-        List<String> result = stemIt(parsedString);
-    }
+    HTMLEditorKit.ParserCallback parserCallback = new Parser();
+    parser.parse(inputReader, parserCallback, true);
+    List<String> result = stemIt(parsedString);
+  }
 
 
     private List<String> stemIt(String stringToStem) throws IOException{

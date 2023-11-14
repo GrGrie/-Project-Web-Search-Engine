@@ -1,10 +1,8 @@
 package com.grgrie;
 
-import java.io.*;
 import java.net.*;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Scanner;
 import java.util.TimerTask;
 
 public class Crawler extends TimerTask{
@@ -23,7 +21,7 @@ public class Crawler extends TimerTask{
 
   public  Crawler (String url, int maxDepth){
     startURL = url;
-    maxDepth = this.maxDepth;
+    this.maxDepth = maxDepth;
     Indexer indexer = new Indexer(encoding);
 
     this.indexer = indexer;
@@ -35,26 +33,18 @@ public class Crawler extends TimerTask{
   public void run() {
     queueURL.add(startURL);
     queueURL.add(null);
-    URL webpage;
-    try {
-      webpage = new URL(startURL);
-      currentUrl = webpage;
-    } catch (MalformedURLException e) {
-      e.printStackTrace();
-    }
     int currentDepth = 0;
-    while(currentDepth <= maxDepth){   
-      //Indexer.printList(queueURL);
+    while(currentDepth <= maxDepth){            //BFS
       try{
         if(queueURL.peek() == null){
           currentDepth++;
           queueURL.removeFirst();
           System.out.println("Increased currentDepth to " + currentDepth);
         } else {
+          currentUrl = new URL(queueURL.getFirst());
+          System.out.println("Currently on page :: " + queueURL.getFirst());
           indexer.indexPage(currentUrl, queueURL.getFirst());
           visitedURLs.add(queueURL.getFirst());
-          System.out.println("I visited page :: " + queueURL.getFirst());
-          currentUrl = new URL(queueURL.getFirst());
           queueURL.poll();
           foundURLs = indexer.getLinks();
           for (String url : foundURLs) {
@@ -64,11 +54,13 @@ public class Crawler extends TimerTask{
             }
           }
           Thread.sleep(300);
-          queueURL.offer(null);
+          queueURL.offer(null); 
+          Indexer.printList(queueURL);
         }
       } catch(Exception e) {
         e.printStackTrace();
       }
+     
     }
     System.out.println("Finished successfully");
   }
