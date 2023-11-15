@@ -14,12 +14,14 @@ public class App
         //String url = "https://www.cs.rptu.de/en/studium/bewerber/schulen";
         String url = "https://www.heapsort.org/";
         System.out.println( "Starting the job" );
-        Crawler crawl = new Crawler(url, 1);
-        DBhandler db = new DBhandler(); 
-        //db.initDB("DBIS");
-        db.connectTo("DBIS");
+        
+        DBhandler dbHandler = new DBhandler(); 
+        //dbHandler.initDB("DBIS");
+        dbHandler.connectTo("DBIS");
+        
+        Crawler crawl = new Crawler(url, 1, dbHandler);
 
-        //crawl.run();
+        //crawl.run();-
 
     }
 }
