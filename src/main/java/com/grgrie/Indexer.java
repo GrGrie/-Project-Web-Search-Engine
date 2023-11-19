@@ -1,21 +1,16 @@
 package com.grgrie;
 
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Queue;
 import java.util.Scanner;
-import java.util.stream.Collectors;
 
 import javax.swing.text.MutableAttributeSet;
 import javax.swing.text.html.HTML;
@@ -42,8 +37,10 @@ public class Indexer {
 
     protected List<String> links = new ArrayList<>();
     private ArrayList<String> bannedWords = new ArrayList<>();
-    String encoding;
-    String baseUrl;
+    private DBhandler dbHandler;
+    private String encoding;
+    private String baseUrl;
+    private String partialUrl;
     URL url;
 
 
@@ -52,17 +49,32 @@ public class Indexer {
       this.encoding = encoding;
     }
 
+    public Indexer (String encoding, DBhandler dbHandler){
+      this(encoding);
+      this.dbHandler = dbHandler;
+    }
+
     protected void indexPage(URL url, String baseUrl){
         this.url = url;
-        this.baseUrl = baseUrl.substring(0, baseUrl.indexOf("/", 8));
+        if(baseUrl.indexOf("/", 8) != -1) {
+          int firstSlash = baseUrl.indexOf("/", 8);
+          if(baseUrl.indexOf("/", firstSlash + 1) != -1){
+            int secondSlash = baseUrl.indexOf("/", firstSlash + 1);
+            this.partialUrl = baseUrl.substring(0, secondSlash);
+          }
+        }
+        if(baseUrl.indexOf("/", 8) != -1) this.baseUrl = baseUrl.substring(0, baseUrl.indexOf("/", 8));
+        else this.baseUrl = baseUrl;
+        
         try {
+            System.out.println("Indexer class :: Starting to parse the page");
             parse();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    class Parser extends HTMLEditorKit.ParserCallback {
+  class Parser extends HTMLEditorKit.ParserCallback {
 
     public void handleStartTag(HTML.Tag tag, MutableAttributeSet attributes, int position) {
 
@@ -93,6 +105,9 @@ public class Indexer {
               address = baseUrl + "/" + address;
             } else if("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".contains(address.substring(0,1)) && !address.startsWith("http")){
               address = baseUrl + "/" + address;
+            }
+            if(address.startsWith("../")){
+              address = partialUrl + address.substring(3);
             }
             if(address.contains("bit.ly")){
               try {
@@ -164,14 +179,16 @@ public class Indexer {
     HTMLEditorKit.Parser parser = kit.getParser();
 
     URLConnection urlConnection = url.openConnection();
-    urlConnection.setDoInput(true);
-    urlConnection.setRequestProperty("User-Agent", "Chrome");
+    //urlConnection.setDoInput(true);
+    //urlConnection.setRequestProperty("User-Agent", "Chrome");
     InputStream in = urlConnection.getInputStream();
-        
     InputStreamReader inputReader = new InputStreamReader(in, encoding);
-        
     HTMLEditorKit.ParserCallback parserCallback = new Parser();
+
+    System.out.println("In Indexer -> Parser starting parser.pasrse()");
+    
     parser.parse(inputReader, parserCallback, true);
+    System.out.println("Finished parser.parse()");
     List<String> result = stemIt(parsedString);
   }
 
@@ -220,7 +237,13 @@ public class Indexer {
       System.out.println(list.get(i));
   }
 
+  public static void printList(Queue<String> list){
+    for(int i = 0; i < list.size(); i++)
+      System.out.println(((List<String>) list).get(i));
+  }
+
   public List<String> getLinks(){
+    //Indexer.printList(links);
     return links;
   }
 
