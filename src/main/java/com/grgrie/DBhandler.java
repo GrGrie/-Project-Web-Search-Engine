@@ -2,10 +2,10 @@ package com.grgrie;
 
 import java.sql.*;
 import java.time.*;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 
 public class  DBhandler {
     private String defaultURL = "jdbc:postgresql://localhost/";
@@ -13,6 +13,8 @@ public class  DBhandler {
     private final String password = "postgres";
     private Connection connectionDBhandler = null;
     private Statement statementDBhandler = null;
+    
+    private int totalNumberOfDocuments = 0;
 
     public DBhandler(){
 
@@ -22,6 +24,17 @@ public class  DBhandler {
         connectTo(DBname);
     }
 
+    protected String getDatabaseUrl(){
+        return this.defaultURL;
+    }
+    
+    protected String getUser(){
+        return this.user;
+    }
+    
+    protected String getPassword(){
+        return this.password;
+    }
 
     protected void initDB(String DBname){
             try{
@@ -56,9 +69,11 @@ public class  DBhandler {
 
     private void createTables(){
         String createTableFeatures = "CREATE TABLE features ("
-                    + "docid SERIAL,"
-                    + "term VARCHAR(20),"
-                    + "term_frequency numeric(10,3))";
+                    + "id SERIAL, "
+                    + "docid INT,"
+                    + "term VARCHAR(50),"
+                    + "term_frequency numeric(13,10),"
+                    + "tfidf numeric(13,10)";
         String createTableDocuments = "CREATE TABLE documents ("
                     + "docid SERIAL,"
                     + "url VARCHAR(300),"
@@ -95,7 +110,7 @@ public class  DBhandler {
         }     
     }
 
-    public Connection connect() throws SQLException {
+    protected Connection connect() throws SQLException {
         Connection conn = DriverManager.getConnection(defaultURL, user, password);
         return conn;
     }
@@ -112,10 +127,12 @@ public class  DBhandler {
                 statement.executeUpdate();
             // Commit the transaction
             connection.commit();
+            connection.close();
             return result;
             } catch (SQLException e) {
             // Roll back the transaction
             connection.rollback();
+            connection.close();
             throw e;
             }
         }  
@@ -137,7 +154,6 @@ public class  DBhandler {
             preparedStatement.addBatch();
             preparedStatement.executeBatch();
             connectionDBhandler.commit();
-            
         } catch (SQLException e) {
             connectionDBhandler.rollback();
             throw e;
@@ -175,24 +191,87 @@ public class  DBhandler {
         return affectedrows;
     }
 
-    public void storeLinks(List<String> links, int depth) throws SQLException {
+    public void storeLinks(List<String> links, int depth, int linkId) throws SQLException {
         try (Connection connection = DriverManager.getConnection(defaultURL, user, password)) {
             connection.setAutoCommit(false);
         try {
            // Perform the database operations
            for (String link : links) {
-               PreparedStatement statement = connection.prepareStatement("INSERT INTO documents (url, depth) VALUES (?, ?) ON CONFLICT (url) DO NOTHING");
-               statement.setString(1, link);
-               statement.setInt(2, depth);
-               statement.executeUpdate();
+                PreparedStatement statement = connection.prepareStatement("INSERT INTO documents (url, depth) VALUES (?, ?) ON CONFLICT (url) DO NOTHING", Statement.RETURN_GENERATED_KEYS);
+                statement.setString(1, link);
+                statement.setInt(2, depth);
+                statement.executeUpdate();
+                ResultSet resultSet = statement.getGeneratedKeys();
+                if(resultSet.next()){
+                    int id = resultSet.getInt(1);
+                    connectLinks(linkId, id);
+                }
            }
 
            // Commit the transaction
            connection.commit();
+           connection.close();
         } catch (SQLException e) {
            // Roll back the transaction
            System.out.println("DBHANDLER storeLinks ERROR!!!");
            connection.rollback();
+           connection.close();
+           throw e;
+        }
+        }
+    }
+
+    public void storeWords(Map<String, Integer> wordsMap, String url) throws SQLException{
+        try (Connection connection = DriverManager.getConnection(defaultURL, user, password)) {
+            connection.setAutoCommit(false);
+        try {
+            int linkId = 0;
+            // Perform the database operations
+            // Count term_frequency
+            int sumOfWords = 0;
+            for (int frequency : wordsMap.values()) {
+                sumOfWords += frequency;
+            }
+            for (String word : wordsMap.keySet()) {
+            linkId = getLinkId(url);
+            PreparedStatement statement = connection.prepareStatement("INSERT INTO features (docid, term, term_frequency) VALUES (?, ?, ?)");
+            statement.setInt(1, linkId);
+            statement.setString(2, word);
+            double term_frequency = 1 + ((double) wordsMap.get(word)/ (double) sumOfWords);
+            statement.setDouble(3, term_frequency);
+            statement.executeUpdate();               
+           }
+
+           // Commit the transaction
+           connection.commit();
+           connection.close();
+        } catch (SQLException e) {
+           // Roll back the transaction
+           System.out.println("DBHANDLER storeWords ERROR!!!");
+           connection.rollback();
+           connection.close();
+           throw e;
+        }
+        }
+    }
+
+    public void connectLinks(int from_docid, int to_docid) throws SQLException{
+        try (Connection connection = DriverManager.getConnection(defaultURL, user, password)) {
+            connection.setAutoCommit(false);
+        try {
+           // Perform the database operations
+            PreparedStatement statement = connection.prepareStatement("INSERT INTO links VALUES (?, ?)");
+            statement.setInt(1, from_docid);
+            statement.setInt(2, to_docid);
+            statement.executeUpdate();
+           // Commit the transaction
+           connection.commit();
+           connection.close();
+        } catch (SQLException e) {
+           // Roll back the transaction
+           System.out.println("DBHANDLER storeLinks ERROR!!!");
+           connection.rollback();
+           connection.close();
            throw e;
         }
         }
@@ -205,10 +284,10 @@ public class  DBhandler {
      * @return {@code docid} of a tuple, containing link
      * @throws SQLException
      */
-    public int idOfLink(String link) throws SQLException{
+    public int getLinkId(String link) throws SQLException{
         int id = -1;
-        if(nullCheck("documents")){
-            String SQL = "SELECT documents.docid FROM documents WHERE crawled_on_date IS NULL ORDER BY docid LIMIT 1";
+        //if(!isNullTable("documents")){
+            String SQL = "SELECT docid FROM documents WHERE url = '" + link + "'";
 
             try (Connection connection = DriverManager.getConnection(defaultURL, user, password)) {
                 connection.setAutoCommit(false);
@@ -216,23 +295,18 @@ public class  DBhandler {
                 ResultSet resultSet = statement.executeQuery(SQL)){
                 resultSet.next();
                 id = resultSet.getInt(1); 
-            
-        
-                
-                
             // Commit the transaction
             connection.commit();
+            connection.close();
+            return id;
             } catch (SQLException e) {
             // Roll back the transaction
             connection.rollback();
+            connection.close();
             throw e;
             }
-
             }   
-        }
-        
-
-        return id;
+        //}
     }
 
     public Map<String,Integer> getTopEightNotVisitedPages() throws SQLException{
@@ -250,16 +324,18 @@ public class  DBhandler {
                 
             // Commit the transaction
             connection.commit();
+            connection.close();
             return result;
             } catch (SQLException e) {
             // Roll back the transaction
             connection.rollback();
+            connection.close();
             throw e;
             }
         }  
     }
 
-    public Boolean nullCheck(String tableName) throws SQLException {
+    public Boolean isNullTable(String tableName) throws SQLException {
 
         Boolean isNull = true;
         PreparedStatement stmt = null;
@@ -281,4 +357,85 @@ public class  DBhandler {
             throw ex;
         }
   }
+
+    public void updateTFIDF(String term, int totalNumberOfDocuments) throws SQLException{
+        String getTotalDocumentsCount = "SELECT COUNT(*) FROM features WHERE term = ?";
+        String setTDIDF = "UPDATE features"
+                        + " SET tfidf = ?"
+                        + " WHERE term = ?";
+        
+        try(Connection connection = DriverManager.getConnection(defaultURL, user, password)){
+            connection.setAutoCommit(false);
+        try (
+            PreparedStatement preparedStatement1 = connection.prepareStatement(getTotalDocumentsCount);
+            PreparedStatement preparedStatement2 = connection.prepareStatement(setTDIDF)) {
+
+            preparedStatement1.setString(1, term);
+            ResultSet rs = preparedStatement1.executeQuery();
+            rs.next();
+            int containingDocumentsCount = rs.getInt(1);
+
+            preparedStatement2.setDouble(1, Math.log(totalNumberOfDocuments/containingDocumentsCount));
+            preparedStatement2.setString(2, term);
+            preparedStatement2.executeUpdate();
+        
+            connection.commit();
+            connection.close();
+        } catch (SQLException ex) {
+            connection.rollback();
+            connection.close();
+            System.out.println(ex.getMessage());
+        }
+        }
+    }
+
+    public List<String> getTerms() throws SQLException{
+        List<String> result = new ArrayList<>();
+
+        String getAllTerms = "SELECT term FROM features";
+
+        try(Connection connection = DriverManager.getConnection(defaultURL, user, password)){
+            connection.setAutoCommit(false);
+        try (
+            PreparedStatement preparedStatement1 = connection.prepareStatement(getAllTerms)) {
+
+            ResultSet rs = preparedStatement1.executeQuery();
+            while(rs.next()){
+               String term = rs.getString(1);
+               result.add(term);
+            }
+            connection.commit();
+            connection.close();
+            return result;
+        } catch (SQLException ex) {
+            connection.rollback();
+            connection.close();
+            System.out.println(ex.getMessage());
+        }
+        }
+        return result;
+    }
+
+    public int getTotalNumberOfDocuments() throws SQLException{
+        String getNumberOfDocuments = "SELECT COUNT (*) FROM documents";
+        try(Connection connection = DriverManager.getConnection(defaultURL, user, password)){
+            connection.setAutoCommit(false);
+        try (
+            PreparedStatement preparedStatement1 = connection.prepareStatement(getNumberOfDocuments)) {
+
+            ResultSet rs = preparedStatement1.executeQuery();
+            rs.next();
+            int totalNumberOfDocuments = rs.getInt(1);
+            connection.commit();
+            connection.close();
+            return totalNumberOfDocuments;
+        } catch (SQLException ex) {
+            connection.rollback();
+            connection.close();
+            System.out.println(ex.getMessage());
+        }
+        }
+        return -1;
+    }
+
 }

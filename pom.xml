@@ -6,6 +6,7 @@
 
   <groupId>com.grgrie</groupId>
   <artifactId>dbis_project</artifactId>
+  <packaging>war</packaging>
   <version>1.0.0</version>
 
   <name>dbis_project</name>
@@ -33,13 +34,25 @@
       <artifactId>postgresql</artifactId>
       <version>42.6.0</version>
     </dependency>
-    <!-- https://github.com/shekhargulati/urlcleaner -->
+
+  <!-- https://github.com/shekhargulati/urlcleaner -->
     <dependency>
         <groupId>com.shekhargulati.urlcleaner</groupId>
         <artifactId>urlcleaner</artifactId>
         <version>0.4.0</version>
         <type>jar</type>
     </dependency>
+
+  <!-- https://mvnrepository.com/artifact/javax.servlet/javax.servlet-api -->
+    <dependency>
+        <groupId>javax.servlet</groupId>
+        <artifactId>javax.servlet-api</artifactId>
+        <version>4.0.1</version>
+        <scope>provided</scope>
+    </dependency>
+
+
+
   </dependencies>
 
   <build>
@@ -51,6 +64,10 @@
           <version>3.1.0</version>
         </plugin>
         <!-- default lifecycle, jar packaging: see https://maven.apache.org/ref/current/maven-core/default-bindings.html#Plugin_bindings_for_jar_packaging -->
+        <plugin>
+          <artifactId>maven-war-plugin</artifactId>
+          <version>3.4.0</version>
+        </plugin>
         <plugin>
           <artifactId>maven-resources-plugin</artifactId>
           <version>3.0.2</version>

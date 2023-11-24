@@ -8,7 +8,9 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Scanner;
 
@@ -37,6 +39,7 @@ public class Indexer {
 
     protected List<String> links = new ArrayList<>();
     private ArrayList<String> bannedWords = new ArrayList<>();
+    private Map<String, Integer> resultMap;
     private DBhandler dbHandler;
     private String encoding;
     private String baseUrl;
@@ -153,7 +156,7 @@ public class Indexer {
       if(text[i] != ' ' && text[i] != ',' && text[i] != '.' && text[i] != ':' && text[i] != ';' && text[i] != '|' && text[i] != '[' && text[i] != '&' && text[i] != '!'
       && text[i] != ']' && text[i] != '"' && text[i] != '?' && text[i] != '©' && text[i] != '>' && text[i] != '<' && text[i] != '“' && text[i] != '„' && text[i] != '('
       && text[i] != ')' && text[i] != '{' && text[i] != '}' && text[i] != '=' && text[i] != '\'' && text[i] != '\"' && text[i] != '+' && text[i] != '%'
-      && text[i] != '*' && text[i] != '$' && text[i] != '/')
+      && text[i] != '*' && text[i] != '$' && text[i] != '/' && text[i] != '@')
           parsed += text[i];
       else{
         text[i] = '\n';
@@ -190,10 +193,18 @@ public class Indexer {
     parser.parse(inputReader, parserCallback, true);
     System.out.println("Finished parser.parse()");
     List<String> result = stemIt(parsedString);
+    Map<String, Integer> resultMap = new HashMap<>();
+    for (String string : result) {
+      if(resultMap.containsKey(string)){
+        resultMap.replace(string, resultMap.get(string) + 1);
+      } else {
+        resultMap.put(string, 1);
+      }
+    }
+    this.resultMap = resultMap;
   }
 
-
-    private List<String> stemIt(String stringToStem) throws IOException{
+  private List<String> stemIt(String stringToStem) throws IOException{
       List<String> fileStrings = new ArrayList<>();
       String[] subStrings = parsedString.split("\n");
       Stemmer stem = new Stemmer();
@@ -249,6 +260,10 @@ public class Indexer {
 
   public void printResultParsedString(){
     System.out.println(parsedString);
+  }
+
+  public Map<String, Integer> getResultMap(){
+    return this.resultMap;
   }
 }
 
