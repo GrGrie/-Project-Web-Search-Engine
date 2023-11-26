@@ -6,18 +6,23 @@
     "configurations": [
         {
             "type": "java",
-            "name": "Current File",
+            "name": "EntryClass",
             "request": "launch",
-            "mainClass": "${file}",
-            //"args": "${command:SpecifyProgramArgs}"
+            "mainClass": "com.grgrie.EntryClass",
+            "projectName": "dbis_project"
         },
-        {   
-            "type": "java",
-            "name": "App",
+        // {
+        //     "type": "java",
+        //     "name": "EntryClass",
+        //     "request": "launch",
+        //     "mainClass": "${file}"
+        // },
+        {
+            "type": "chrome",
+            "name": "Launch Web App",
             "request": "launch",
-            "mainClass": "com.grgrie.App",
-            "projectName": "dbis_project",
-            //"args": "${command:SpecifyProgramArgs}"
+            "webRoot": "${workspaceFolder}/target/dbis_project-1.0.0",
+            "url": "http://localhost:8080"
         }
     ]
 }

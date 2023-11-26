@@ -9,13 +9,12 @@ import java.util.Map;
 
 public class  DBhandler {
     private String defaultURL = "jdbc:postgresql://localhost/";
+    private String dbUrl = "";
     private final String user = "postgres";
     private final String password = "postgres";
     private Connection connectionDBhandler = null;
     private Statement statementDBhandler = null;
     
-    private int totalNumberOfDocuments = 0;
-
     public DBhandler(){
 
     }
@@ -24,56 +23,67 @@ public class  DBhandler {
         connectTo(DBname);
     }
 
-    protected String getDatabaseUrl(){
-        return this.defaultURL;
+    protected boolean databaseExists(String dbName){
+        String sqlQuery = "SELECT 'CREATE DATABASE "+dbName+"' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '"+dbName+"')";
+        String  dbIsFoundString = "";
+        boolean dbIsFound = false;
+        
+        try {
+            
+            Connection conn = connect();
+            Statement statement;
+            statement = conn.createStatement(); 
+            ResultSet rs = statement.executeQuery(sqlQuery);
+            while(rs.next()){
+                dbIsFoundString = rs.getString(1);
+            }
+            System.out.println("dbIsFoundString :: " + dbIsFoundString);
+            if(dbIsFoundString == "")
+                dbIsFound = true;
+        } catch (SQLException e) {
+            System.out.println("|*| Error checking database existance! |*|");
+            e.printStackTrace();
+        }
+
+
+        System.out.println("in databaseExists return dbIsFound :: ");
+        System.out.println(dbIsFound);
+        return dbIsFound;
+    }
+
+    protected Connection connect() throws SQLException{
+        Connection conn = null;
+        if(dbUrl == "")
+            conn = DriverManager.getConnection(defaultURL, user, password);
+        else
+            conn = DriverManager.getConnection(dbUrl, user, password);
+        return conn;
+    }
+
+    private void setHandlers(String dbName){
+        try {
+            connectionDBhandler = connect();
+            statementDBhandler = connectionDBhandler.createStatement();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    protected void connectTo(String dbName){
+        dbUrl = defaultURL + dbName.toLowerCase();
+        setHandlers(dbName);
+        if(connectionDBhandler != null) System.out.println("Connected successfully to database " + dbName + " via address :: \t" + defaultURL);
+        else System.out.println("Failed to connect to database " + dbName);
     }
     
-    protected String getUser(){
-        return this.user;
-    }
-    
-    protected String getPassword(){
-        return this.password;
-    }
-
-    protected void initDB(String DBname){
-            try{
-                Connection connection = DriverManager.getConnection(defaultURL, user, password);
-                if(connection != null) System.out.println("Connected successfully to PostgreSQL server");
-                else System.out.println("Failed to connect to PostgreSQL server");
-                ResultSet resultSet = connection.getMetaData().getCatalogs();
-                while(resultSet.next()){
-                    String catalogs = resultSet.getString(1);
-                    if(!DBname.toLowerCase().equals(catalogs)){
-                        Statement statement = connection.createStatement();
-                        String sql1 = "CREATE DATABASE " + DBname;
-                        statement.executeUpdate(sql1);
-                        System.out.println("Database successfully created!");
-                        defaultURL += DBname.toLowerCase();
-                    }
-                }
-
-                connectionDBhandler = connect();
-                statementDBhandler = connectionDBhandler.createStatement();
-                createTables();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            } 
-    }
-
-    protected void connectTo(String DBname){
-        verifyIntegrity(DBname);
-        if(connectionDBhandler != null) System.out.println("Connected successfully to database " + DBname + " via address :: \t" + defaultURL);
-        else System.out.println("Failed to connect to database " + DBname);
-    }
-
     private void createTables(){
         String createTableFeatures = "CREATE TABLE features ("
                     + "id SERIAL, "
-                    + "docid INT,"
-                    + "term VARCHAR(50),"
-                    + "term_frequency numeric(13,10),"
-                    + "tfidf numeric(13,10)";
+                    + "docid INT, "
+                    + "term VARCHAR(50), "
+                    + "term_frequency numeric(13,10), "
+                    + "tfidf numeric(13,10)"
+                    + ")";
         String createTableDocuments = "CREATE TABLE documents ("
                     + "docid SERIAL,"
                     + "url VARCHAR(300),"
@@ -92,35 +102,77 @@ public class  DBhandler {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
     }
 
-    private void verifyIntegrity(String DBname){
-        defaultURL = defaultURL + DBname.toLowerCase();
-        try {
-            Connection conn = connect();
-            connectionDBhandler = conn;
-            ResultSet tmpResultSet = conn.getMetaData().getCatalogs();
-            tmpResultSet.next();
-                if(tmpResultSet.getString(1).equals(DBname.toLowerCase())){
-                statementDBhandler = connectionDBhandler.createStatement();
-                }
+    protected void createDatabase(String dbName){
+        try{
+            Connection connection = connect();
+            Statement statement = connection.createStatement();
+                
+            // Creating DB and storing its' URL
+            String sqlQuery = "CREATE DATABASE " + dbName.toLowerCase();
+            statement.executeUpdate(sqlQuery);
+            dbUrl = defaultURL + dbName.toLowerCase();
+
+            setHandlers(dbName);
+            createTables();
         } catch (SQLException e) {
+            System.out.println("|*| Error creating database |*|");
             e.printStackTrace();
-        }     
+        }
+        
     }
 
-    protected Connection connect() throws SQLException {
-        Connection conn = DriverManager.getConnection(defaultURL, user, password);
-        return conn;
-    }
+        
 
+    // protected void initDB(String DBname){
+    //         try{
+    //             Connection connection = DriverManager.getConnection(defaultURL, user, password);
+    //             if(connection != null) System.out.println("Connected successfully to PostgreSQL server");
+    //             else System.out.println("Failed to connect to PostgreSQL server");
+    //             ResultSet resultSet = connection.getMetaData().getCatalogs();
+    //             while(resultSet.next()){
+    //                 String catalogs = resultSet.getString(1);
+    //                 if(!DBname.toLowerCase().equals(catalogs)){
+    //                     Statement statement = connection.createStatement();
+    //                     String sql1 = "CREATE DATABASE " + DBname;
+    //                     statement.executeUpdate(sql1);
+    //                     System.out.println("Database successfully created!");
+    //                     defaultURL += DBname.toLowerCase();
+    //                 }
+    //             }
+    //             //connectionDBhandler = connect();
+    //             //statementDBhandler = connectionDBhandler.createStatement();
+    //             createTables();
+    //         } catch (SQLException e) {
+    //             e.printStackTrace();
+    //         } 
+    // }
+
+    
+
+    // private void verifyIntegrity(String DBname){
+    //     defaultURL = defaultURL + DBname.toLowerCase();
+    //     try {
+    //         Connection conn = connect();
+    //         connectionDBhandler = conn;
+    //         ResultSet tmpResultSet = conn.getMetaData().getCatalogs();
+    //         tmpResultSet.next();
+    //             if(tmpResultSet.getString(1).equals(DBname.toLowerCase())){
+    //             statementDBhandler = connectionDBhandler.createStatement();
+    //             }
+    //     } catch (SQLException e) {
+    //         e.printStackTrace();
+    //     }     
+    // }
+
+    
 
     public int getCrawledDepth(String link) throws SQLException{
         int result = 0;
         String SQL = "SELECT documents.depth FROM documents WHERE documents.url = ?";
 
-        try (Connection connection = DriverManager.getConnection(defaultURL, user, password)) {
+        try (Connection connection = DriverManager.getConnection(dbUrl, user, password)) {
             connection.setAutoCommit(false);
             try(PreparedStatement statement = connection.prepareStatement(SQL);){
                 statement.setString(1, link);
@@ -168,7 +220,7 @@ public class  DBhandler {
                 + " WHERE url = ?";
 
         int affectedrows = 0;
-        try(Connection connection = DriverManager.getConnection(defaultURL, user, password)){
+        try(Connection connection = DriverManager.getConnection(dbUrl, user, password)){
             connection.setAutoCommit(false);
         
         try (
@@ -192,7 +244,7 @@ public class  DBhandler {
     }
 
     public void storeLinks(List<String> links, int depth, int linkId) throws SQLException {
-        try (Connection connection = DriverManager.getConnection(defaultURL, user, password)) {
+        try (Connection connection = DriverManager.getConnection(dbUrl, user, password)) {
             connection.setAutoCommit(false);
         try {
            // Perform the database operations
@@ -222,7 +274,7 @@ public class  DBhandler {
     }
 
     public void storeWords(Map<String, Integer> wordsMap, String url) throws SQLException{
-        try (Connection connection = DriverManager.getConnection(defaultURL, user, password)) {
+        try (Connection connection = DriverManager.getConnection(dbUrl, user, password)) {
             connection.setAutoCommit(false);
         try {
             int linkId = 0;
@@ -256,7 +308,7 @@ public class  DBhandler {
     }
 
     public void connectLinks(int from_docid, int to_docid) throws SQLException{
-        try (Connection connection = DriverManager.getConnection(defaultURL, user, password)) {
+        try (Connection connection = DriverManager.getConnection(dbUrl, user, password)) {
             connection.setAutoCommit(false);
         try {
            // Perform the database operations
@@ -289,7 +341,7 @@ public class  DBhandler {
         //if(!isNullTable("documents")){
             String SQL = "SELECT docid FROM documents WHERE url = '" + link + "'";
 
-            try (Connection connection = DriverManager.getConnection(defaultURL, user, password)) {
+            try (Connection connection = DriverManager.getConnection(dbUrl, user, password)) {
                 connection.setAutoCommit(false);
             try(Statement statement = connection.createStatement();
                 ResultSet resultSet = statement.executeQuery(SQL)){
@@ -313,7 +365,7 @@ public class  DBhandler {
         Map<String,Integer> result = new HashMap<>();
         String SQL = "SELECT documents.url, documents.depth FROM documents WHERE crawled_on_date IS NULL AND url NOT LIKE '%.pdf' AND url NOT LIKE '%.txt' ORDER BY docid LIMIT 8 FOR UPDATE";
 
-        try (Connection connection = DriverManager.getConnection(defaultURL, user, password)) {
+        try (Connection connection = DriverManager.getConnection(dbUrl, user, password)) {
             connection.setAutoCommit(false);
             try(Statement statement = connection.createStatement();
                 ResultSet resultSet = statement.executeQuery(SQL)){
@@ -337,6 +389,7 @@ public class  DBhandler {
 
     public Boolean isNullTable(String tableName) throws SQLException {
 
+        setHandlers("dbis");
         Boolean isNull = true;
         PreparedStatement stmt = null;
         ResultSet rs = null;
@@ -364,7 +417,7 @@ public class  DBhandler {
                         + " SET tfidf = ?"
                         + " WHERE term = ?";
         
-        try(Connection connection = DriverManager.getConnection(defaultURL, user, password)){
+        try(Connection connection = DriverManager.getConnection(dbUrl, user, password)){
             connection.setAutoCommit(false);
         try (
             PreparedStatement preparedStatement1 = connection.prepareStatement(getTotalDocumentsCount);
@@ -394,7 +447,7 @@ public class  DBhandler {
 
         String getAllTerms = "SELECT term FROM features";
 
-        try(Connection connection = DriverManager.getConnection(defaultURL, user, password)){
+        try(Connection connection = DriverManager.getConnection(dbUrl, user, password)){
             connection.setAutoCommit(false);
         try (
             PreparedStatement preparedStatement1 = connection.prepareStatement(getAllTerms)) {
@@ -418,7 +471,7 @@ public class  DBhandler {
 
     public int getTotalNumberOfDocuments() throws SQLException{
         String getNumberOfDocuments = "SELECT COUNT (*) FROM documents";
-        try(Connection connection = DriverManager.getConnection(defaultURL, user, password)){
+        try(Connection connection = DriverManager.getConnection(dbUrl, user, password)){
             connection.setAutoCommit(false);
         try (
             PreparedStatement preparedStatement1 = connection.prepareStatement(getNumberOfDocuments)) {
