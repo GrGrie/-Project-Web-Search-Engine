@@ -27,6 +27,10 @@ public class App
     //private String startUrl = "https://www.cs.rptu.de/en/studium/bewerber/schulen";
     private static int numberOfThreads = 8;
     
+    public App(){
+        init();
+    }
+
     public void main()
     {
         init();
@@ -120,11 +124,11 @@ public class App
         }
     }
 
-    protected List<String> googleSearch(String query) throws SQLException{
+    protected List<String> googleSearch(String query){
         init();
         
-        List<String> findGoogle;
-
+        List<String> findGoogle = new ArrayList<>();
+        
         // Check if allowed to leave domain
         //TODO : implement DBhandler method, that returns sites only from this domain
         boolean isAllowedToLeaveDomain = true;
@@ -133,22 +137,81 @@ public class App
             isAllowedToLeaveDomain = false;
             int startIndexOfSite = query.indexOf("site:");
             int endIndexOfSite = query.indexOf(" ", startIndexOfSite+1);
-            domain = query.substring(startIndexOfSite, endIndexOfSite);
-            query.replaceFirst(domain + " ", "");
+            domain = query.substring(startIndexOfSite+5, endIndexOfSite);
+            query = query.replaceFirst("site:" + domain + " ", "");
         }
 
         List<String> searchStringList = queryToList(query);
 
-        int numberOfTopResults = Integer.parseInt(searchStringList.remove(0));
-        boolean isConjunctive;
-        String conjunctiveString = searchStringList.remove(0);
-        if(conjunctiveString.equalsIgnoreCase("AND") || conjunctiveString.equalsIgnoreCase("conjunctive")) isConjunctive = true;
-        else isConjunctive = false;    
+        if(domain != ""){
+            GoogleQuery googleQuery = new GoogleQuery(searchStringList);
+            googleQuery.setDBhandler(dbHandler);
+            try {
+                findGoogle = googleQuery.executeDomainOnlyGoogleQuery(domain);
+                return findGoogle;
+            } catch (SQLException e) {
+                System.out.println("|*| Error in app.googleSearch() in domain != null statement");
+                e.printStackTrace();
+            }
+            
+        }
     
         System.out.println("searchStringList size is " + searchStringList.size());
-        GoogleQuery googleQuery = new GoogleQuery(searchStringList, isConjunctive, numberOfTopResults);
+        GoogleQuery googleQuery = new GoogleQuery(searchStringList);
         googleQuery.setDBhandler(dbHandler);
-        findGoogle = googleQuery.executeGoogleQuery();
+        try {
+            findGoogle = googleQuery.executeGoogleQuery();
+            return findGoogle;
+        } catch (SQLException e) {
+            System.out.println("|*| Error in app.googleSearch() in googleQuery.executeGoogleQuery statement");
+            e.printStackTrace();
+        }
+        return findGoogle;
+
+    }
+
+    protected List<String> googleSearch(String query, boolean includeTFIDF){
+        init();
+        
+        List<String> findGoogle = new ArrayList<>();
+        
+        // Check if allowed to leave domain
+        //TODO : implement DBhandler method, that returns sites only from this domain
+        boolean isAllowedToLeaveDomain = true;
+        String domain = "";
+        if(query.contains("site:")){
+            isAllowedToLeaveDomain = false;
+            int startIndexOfSite = query.indexOf("site:");
+            int endIndexOfSite = query.indexOf(" ", startIndexOfSite+1);
+            domain = query.substring(startIndexOfSite+5, endIndexOfSite);
+            query = query.replaceFirst("site:" + domain + " ", "");
+        }
+
+        List<String> searchStringList = queryToList(query);
+
+        if(domain != ""){
+            GoogleQuery googleQuery = new GoogleQuery(searchStringList);
+            googleQuery.setDBhandler(dbHandler);
+            try {
+                findGoogle = googleQuery.executeDomainOnlyGoogleQuery(domain, includeTFIDF);
+                return findGoogle;
+            } catch (SQLException e) {
+                System.out.println("|*| Error in app.googleSearch() in domain != null statement");
+                e.printStackTrace();
+            }
+            
+        }
+    
+        System.out.println("searchStringList size is " + searchStringList.size());
+        GoogleQuery googleQuery = new GoogleQuery(searchStringList);
+        googleQuery.setDBhandler(dbHandler);
+        try {
+            findGoogle = googleQuery.executeGoogleQuery(includeTFIDF);
+            return findGoogle;
+        } catch (SQLException e) {
+            System.out.println("|*| Error in app.googleSearch() in googleQuery.executeGoogleQuery statement");
+            e.printStackTrace();
+        }
         return findGoogle;
 
     }
@@ -162,9 +225,31 @@ public class App
         return searchStringList;
     }
 
+    protected int getNumberOfTermOccurances(String term){
+        try {
+            return dbHandler.getNumberOfTermOccurances(term);
+        } catch (SQLException e) {
+            System.out.println("|*| Error in App.getNumberOfTermIccurances. Returning -1 |*|");
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    protected int getTotalNumberOfTerms(){
+        try {
+            return dbHandler.getTotalNumberOfTerms();
+        } catch (SQLException e) {
+            System.out.println("|*| Error in App.getTotalNumberOfTerms(). Returning -1 |*|");
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
     protected String success(){
         return "Successfully finished given task!";
     }
+
+
 }
 
 

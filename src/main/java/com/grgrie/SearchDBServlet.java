@@ -22,13 +22,9 @@ public class SearchDBServlet extends HttpServlet {
         App app = new App();
         List<String> URLs;
         PrintWriter out = response.getWriter();
-        try {
-            URLs = app.googleSearch(searchQuery);
-            for (String string : URLs) {
-                out.println("Answer is " + string);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
+        URLs = app.googleSearch(searchQuery);
+        for (String string : URLs) {
+            out.println("Answer is " + string);
         }
        
         

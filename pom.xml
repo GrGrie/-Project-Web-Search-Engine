@@ -35,6 +35,14 @@
       <version>42.6.0</version>
     </dependency>
 
+
+  <!-- https://mvnrepository.com/artifact/org.json/json -->
+  <dependency>
+      <groupId>org.json</groupId>
+      <artifactId>json</artifactId>
+      <version>20231013</version>
+  </dependency>
+
   <!-- https://github.com/shekhargulati/urlcleaner -->
     <dependency>
         <groupId>com.shekhargulati.urlcleaner</groupId>

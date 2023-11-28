@@ -37,7 +37,6 @@ public class  DBhandler {
             while(rs.next()){
                 dbIsFoundString = rs.getString(1);
             }
-            System.out.println("dbIsFoundString :: " + dbIsFoundString);
             if(dbIsFoundString == "")
                 dbIsFound = true;
         } catch (SQLException e) {
@@ -45,8 +44,6 @@ public class  DBhandler {
             e.printStackTrace();
         }
 
-
-        System.out.println("in databaseExists return dbIsFound :: ");
         System.out.println(dbIsFound);
         return dbIsFound;
     }
@@ -491,4 +488,50 @@ public class  DBhandler {
         return -1;
     }
 
+    protected int getNumberOfTermOccurances(String term) throws SQLException{
+        System.out.println("INSIDE DBhandler.getNumberOfTermOccurances");
+        String getNumberOfTermOccurances = "SELECT COUNT (*) FROM features WHERE term = '" + term + "'";
+        try(Connection connection = DriverManager.getConnection(dbUrl, user, password)){
+            connection.setAutoCommit(false);
+        try (
+            PreparedStatement preparedStatement1 = connection.prepareStatement(getNumberOfTermOccurances)) {
+
+            ResultSet rs = preparedStatement1.executeQuery();
+            rs.next();
+            int totalNumberOfDocuments = rs.getInt(1);
+            connection.commit();
+            connection.close();
+            return totalNumberOfDocuments;
+        } catch (SQLException ex) {
+            System.out.println("|*| Error in DBhandler.getNumberOfTermOccurances(). Returning -1 |*|");
+            connection.rollback();
+            connection.close();
+            System.out.println(ex.getMessage());
+        }
+        }
+        return -1;
+    }
+
+    protected int getTotalNumberOfTerms() throws SQLException{
+        String getTotalNumberOfTerms = "SELECT SUM(COUNT(term)) OVER() counts FROM features";
+        try(Connection connection = DriverManager.getConnection(dbUrl, user, password)){
+            connection.setAutoCommit(false);
+        try (
+            PreparedStatement preparedStatement1 = connection.prepareStatement(getTotalNumberOfTerms)) {
+
+            ResultSet rs = preparedStatement1.executeQuery();
+            rs.next();
+            int totalNumberOfDocuments = rs.getInt(1);
+            connection.commit();
+            connection.close();
+            return totalNumberOfDocuments;
+        } catch (SQLException ex) {
+            System.out.println("|*| Error in DBhandler.getTotalNumberOfTerms(). Returning -1 |*|");
+            connection.rollback();
+            connection.close();
+            System.out.println(ex.getMessage());
+        }
+        }
+        return -1;
+    }
 }
