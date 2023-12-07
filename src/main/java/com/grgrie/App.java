@@ -9,10 +9,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Scanner;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Hello world!
@@ -22,48 +26,40 @@ public class App
 {
     private ExecutorService executorService;
     private DBhandler dbHandler;
+    private static List<String> handledOrVisitedURLs;
+    private static String startURL;
+    private int maxDepth;
+    private int maxNumberOfDocuments;
+    private static int numberOfCrawledDocuments = 0;
+    private boolean isAllowedToLeaveDomain = true;
 
-    //private String defaultStartCrawlUrl = "https://www.heapsort.org/";
-    //private String startUrl = "https://www.cs.rptu.de/en/studium/bewerber/schulen";
-    private static int numberOfThreads = 8;
+
+    private boolean gotInside = false;
+    private static int numberOfThreads = 4;
     
     public App(){
         init();
     }
 
-    public void main()
-    {
-        init();
-        //crawl();
-        // Finished crawling, starting to work with the result:
-        
-        // Updating tfidf
-        //updateTFIDF();
-
-        /* 
-            Implementing Google - like search
-        */
-
-        // Creating Command Line Interface
-        // String inputCLIString = readCLIinput();
-        
-
-        // Parsing command line interface
-        
-        
-    }
-
     protected void init(){
-        System.out.println( "Initializing DB" );
+        
+        System.out.println("Initializing App");
 
         dbHandler = new DBhandler();
+        handledOrVisitedURLs = new ArrayList<>();
         String databaseName = "dbis";
         if(!dbHandler.databaseExists(databaseName)){
+            System.out.println( "Initializing DB" );
             dbHandler.createDatabase(databaseName);
             dbHandler = new DBhandler(databaseName);
         } else {
+            System.out.println("Connecting to Database");
             dbHandler = new DBhandler(databaseName);
         }
+    }
+
+    protected void emptyDatabase(String databaseName){
+        dbHandler.emptyDatabase(databaseName);
     }
 
     protected String readCLIinput(){
@@ -75,40 +71,78 @@ public class App
     }
 
     protected void crawl(String startUrl){
-        init();
-
         ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
+        CompletionService<Integer> completionService = new ExecutorCompletionService<Integer>(executorService);
         this.executorService = executorService;
+        int currentNumberOfThreads = 0;
+        this.startURL = startUrl;
         
+        // Filling the queue — if the program wasn't started before, add start URL to the queue. In other case
+        // (if the program has been lauched previously), add all unfinished pages to the queue and, in case
+        // empty threads are left, add top pages to crawl to the queue
         Queue<String> urlQueue = new LinkedList<>();
-        urlQueue.add(startUrl);
+        List<String> nonFinishedURLs = dbHandler.getTopNonFinishedCrawlingPages(numberOfThreads);
+        if(nonFinishedURLs.size() > 0){
+            for (String nonFinishedUrl : nonFinishedURLs) {
+                urlQueue.add(nonFinishedUrl);
+            }
+            if(urlQueue.size() < numberOfThreads){
+                int queueEmptynessNumber = numberOfThreads - urlQueue.size();
+                for (String string : dbHandler.getTopNotVisitedPages(queueEmptynessNumber, isAllowedToLeaveDomain, startURL).keySet()) {
+                    urlQueue.add(string);
+                }
+            }
+        } else {
+          urlQueue.add(startUrl);  
+        }
+        
 
-        while (!urlQueue.isEmpty()) {
-            String url = "emptyUrlFromMainApp";
-            try {
+        //TODO: Decide what to do with isAllowedToLeaveDomain (it should be searched in DB properly)
+        String url = "";
+        
+        while(!urlQueue.isEmpty()){
+            
+            while(currentNumberOfThreads < numberOfThreads && !urlQueue.isEmpty() && !handledOrVisitedURLs.contains(urlQueue.peek())){
                 url = urlQueue.poll();
-                System.out.println("GIVING CRAWLER URL :: " + url);
-                Future<?> future = executorService.submit(new Crawler(url, 1, dbHandler));   
-                if(future.get() == null){  // If crawl is done, put new url to queue
-                    Iterator<Map.Entry<String, Integer>> iterator;
-                    iterator = dbHandler.getTopEightNotVisitedPages().entrySet().iterator();
-                    //System.out.println("Getting top html page");
+                if(isAllowedToLeaveDomain || (!isAllowedToLeaveDomain && Indexer.getDomainName(url).equals(Indexer.getDomainName(startUrl)))){
+                    gotInside = true;
+                    System.out.println("Submitting new task at " + url);
+                    completionService.submit(new Crawler(url, maxDepth, maxNumberOfDocuments, isAllowedToLeaveDomain, dbHandler));
+                    currentNumberOfThreads++;
+                }
+            }
+            
+            if(handledOrVisitedURLs.contains(urlQueue.peek()))
+                urlQueue.poll();
+        
+            //if(gotInside){
+                try{
+                Future<Integer> resultFuture = completionService.take();
+                numberOfCrawledDocuments++;
+                handledOrVisitedURLs.add(url);
+                Iterator<Map.Entry<String, Integer>> iterator;
+                if(maxNumberOfDocuments - (numberOfCrawledDocuments + currentNumberOfThreads) >= numberOfThreads)
+                    iterator = dbHandler.getTopNotVisitedPages(numberOfThreads, isAllowedToLeaveDomain, startURL).entrySet().iterator();
+                else iterator = dbHandler.getTopNotVisitedPages(maxNumberOfDocuments - (numberOfCrawledDocuments + currentNumberOfThreads) + 1, isAllowedToLeaveDomain, startURL).entrySet().iterator();
+
                     while(iterator.hasNext() && urlQueue.size() < numberOfThreads){
                         Map.Entry<String, Integer> map = iterator.next();
                         url = map.getKey();
-                        if(url != "-1" && !urlQueue.contains(url)) urlQueue.add(url); 
+                        if(!urlQueue.contains(url)) urlQueue.add(url); 
                     }
-                     
+
+                System.out.println("Thread " + resultFuture.get() + " finished, assigning new task");
+                currentNumberOfThreads--;
+
+                } catch (InterruptedException | ExecutionException e) {
+                    e.printStackTrace();
                 }
-            }   catch (InterruptedException | ExecutionException | SQLException e) {
-                e.printStackTrace();
-            }
-            System.out.println("\nURL QUEUE ::");
-            Indexer.printList(urlQueue);
-            System.out.println();
+                gotInside = false;  
+            //}
+           
         }
 
-    executorService.shutdown();
+        executorService.shutdown();
     }
 
     protected void updateTFIDF(){
@@ -245,11 +279,37 @@ public class App
         return -1;
     }
 
+    private int getNumberOfCrawledDocuments(){
+        return dbHandler.getNumberOfVisitedURLs();
+    }
+
     protected String success(){
         return "Successfully finished given task!";
     }
 
+    public void setMaxDepth(int maxDepth){
+        this.maxDepth = maxDepth;
+    }
 
+    public int maxDepth(){
+        return this.maxDepth;
+    }
+
+    public void setMaxNumberOfDocuments(int maxNumberOfDocuments){
+        this.maxNumberOfDocuments = maxNumberOfDocuments;
+    }
+
+    public int maxNumberOfDocuments(){
+        return this.maxNumberOfDocuments;
+    }
+
+    public boolean isAllowedToLeaveDomain() {
+        return isAllowedToLeaveDomain;
+    }
+
+    public void setIsAllowedToLeaveDomain(boolean isAllowedToLeaveDomain) {
+        this.isAllowedToLeaveDomain = isAllowedToLeaveDomain;
+    }
 }
 
 

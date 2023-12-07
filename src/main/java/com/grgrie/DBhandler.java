@@ -7,6 +7,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.swing.event.SwingPropertyChangeSupport;
+
+import org.postgresql.jdbc2.ArrayAssistantRegistry;
+
 public class  DBhandler {
     private String defaultURL = "jdbc:postgresql://localhost/";
     private String dbUrl = "";
@@ -86,7 +90,8 @@ public class  DBhandler {
                     + "url VARCHAR(300),"
                     + "crawled_on_date DATE,"
                     + "depth int NOT NULL,"
-                    + "UNIQUE (url) "
+                    + "UNIQUE (url), "
+                    + "crawling_status VARCHAR(20) "
                     + ");";
         String createTableLinks = "CREATE TABLE links ("
                     + "from_docid int,"
@@ -120,50 +125,23 @@ public class  DBhandler {
         
     }
 
-        
+    protected void emptyDatabase(String dbName){
+        if(dbName.equalsIgnoreCase("dbis")){
+            String deleteFeatures = "DELETE FROM features";
+            String deleteDocuments = "DELETE FROM documents";
+            String deleteLinks = "DELETE FROM links";
 
-    // protected void initDB(String DBname){
-    //         try{
-    //             Connection connection = DriverManager.getConnection(defaultURL, user, password);
-    //             if(connection != null) System.out.println("Connected successfully to PostgreSQL server");
-    //             else System.out.println("Failed to connect to PostgreSQL server");
-    //             ResultSet resultSet = connection.getMetaData().getCatalogs();
-    //             while(resultSet.next()){
-    //                 String catalogs = resultSet.getString(1);
-    //                 if(!DBname.toLowerCase().equals(catalogs)){
-    //                     Statement statement = connection.createStatement();
-    //                     String sql1 = "CREATE DATABASE " + DBname;
-    //                     statement.executeUpdate(sql1);
-    //                     System.out.println("Database successfully created!");
-    //                     defaultURL += DBname.toLowerCase();
-    //                 }
-    //             }
-    //             //connectionDBhandler = connect();
-    //             //statementDBhandler = connectionDBhandler.createStatement();
-    //             createTables();
-    //         } catch (SQLException e) {
-    //             e.printStackTrace();
-    //         } 
-    // }
-
-    
-
-    // private void verifyIntegrity(String DBname){
-    //     defaultURL = defaultURL + DBname.toLowerCase();
-    //     try {
-    //         Connection conn = connect();
-    //         connectionDBhandler = conn;
-    //         ResultSet tmpResultSet = conn.getMetaData().getCatalogs();
-    //         tmpResultSet.next();
-    //             if(tmpResultSet.getString(1).equals(DBname.toLowerCase())){
-    //             statementDBhandler = connectionDBhandler.createStatement();
-    //             }
-    //     } catch (SQLException e) {
-    //         e.printStackTrace();
-    //     }     
-    // }
-
-    
+        try {
+            statementDBhandler.executeUpdate(deleteFeatures);
+            statementDBhandler.executeUpdate(deleteDocuments);
+            statementDBhandler.executeUpdate(deleteLinks);
+            System.out.println("|*| Successfully deleted tables from database|*|");
+        } catch (SQLException e) {
+            System.out.println("|*| Error deleting tables from database |*|");
+            e.printStackTrace();
+        }
+        }
+    }
 
     public int getCrawledDepth(String link) throws SQLException{
         int result = 0;
@@ -173,18 +151,20 @@ public class  DBhandler {
             connection.setAutoCommit(false);
             try(PreparedStatement statement = connection.prepareStatement(SQL);){
                 statement.setString(1, link);
-                statement.executeUpdate();
-            // Commit the transaction
-            connection.commit();
-            connection.close();
-            return result;
-            } catch (SQLException e) {
-            // Roll back the transaction
-            connection.rollback();
-            connection.close();
-            throw e;
+                ResultSet rs = statement.executeQuery();
+                rs.next();
+                result = rs.getInt(1);
+                // Commit the transaction
+                connection.commit();
+                connection.close();
+                return result;
+                } catch (SQLException e) {
+                // Roll back the transaction
+                connection.rollback();
+                connection.close();
+                throw e;
             }
-        }  
+        }
     }
 
     public int insertInDocumentsTable(String link, boolean isCrawled, int depth) throws SQLException{
@@ -213,7 +193,7 @@ public class  DBhandler {
     // Updates crawled date in documents table
     public int updateCrawledDate(String link, int depth) throws SQLException{
         String SQL = "UPDATE documents "
-                + "SET crawled_on_date = ? , depth = ?"
+                + "SET crawled_on_date = ? , depth = ? , crawling_status = 'FINISHED'"
                 + " WHERE url = ?";
 
         int affectedrows = 0;
@@ -240,7 +220,7 @@ public class  DBhandler {
         return affectedrows;
     }
 
-    public void storeLinks(List<String> links, int depth, int linkId) throws SQLException {
+    public synchronized void storeLinks(List<String> links, int depth, int linkId) throws SQLException {
         try (Connection connection = DriverManager.getConnection(dbUrl, user, password)) {
             connection.setAutoCommit(false);
         try {
@@ -270,7 +250,7 @@ public class  DBhandler {
         }
     }
 
-    public void storeWords(Map<String, Integer> wordsMap, String url) throws SQLException{
+    public synchronized void storeWords(Map<String, Integer> wordsMap, String url) throws SQLException{
         try (Connection connection = DriverManager.getConnection(dbUrl, user, password)) {
             connection.setAutoCommit(false);
         try {
@@ -358,18 +338,17 @@ public class  DBhandler {
         //}
     }
 
-    public Map<String,Integer> getTopEightNotVisitedPages() throws SQLException{
+    public Map<String,Integer> getTopNotVisitedPages(int numberOfPagesToGet, boolean isAllowedToLeaveDomain, String url){
         Map<String,Integer> result = new HashMap<>();
-        String SQL = "SELECT documents.url, documents.depth FROM documents WHERE crawled_on_date IS NULL AND url NOT LIKE '%.pdf' AND url NOT LIKE '%.txt' ORDER BY docid LIMIT 8 FOR UPDATE";
-
+        String SQL;
+        if(isAllowedToLeaveDomain) SQL = "SELECT documents.url, documents.depth FROM documents WHERE crawled_on_date IS NULL AND crawling_status IS NULL AND url NOT LIKE '%.pdf' AND url NOT LIKE '%.txt' ORDER BY docid LIMIT " + numberOfPagesToGet;
+        else SQL = "SELECT documents.url, documents.depth FROM documents WHERE crawled_on_date IS NULL AND crawling_status IS NULL AND url NOT LIKE '%.pdf' AND url NOT LIKE '%.txt' AND url LIKE '" + Indexer.getDomainName(url) + "%' ORDER BY docid LIMIT " + numberOfPagesToGet;
         try (Connection connection = DriverManager.getConnection(dbUrl, user, password)) {
             connection.setAutoCommit(false);
             try(Statement statement = connection.createStatement();
                 ResultSet resultSet = statement.executeQuery(SQL)){
                 while(resultSet.next())
                     result.put(resultSet.getString(1), resultSet.getInt(2));
-                // if(!resultSet.next()) 
-                //     result.put("-1", -1);
                 
             // Commit the transaction
             connection.commit();
@@ -381,7 +360,29 @@ public class  DBhandler {
             connection.close();
             throw e;
             }
-        }  
+        } catch (SQLException e1) {
+            e1.printStackTrace();
+        }
+        return result;
+    }
+
+    public List<String> getTopNonFinishedCrawlingPages(int numberOfPagesToGet){
+        List<String> resultList = new ArrayList<>();
+
+        String sqlQuery = "SELECT url FROM documents WHERE crawled_on_date IS NULL AND crawling_status = 'crawling' AND url NOT LIKE '%.pdf' AND url NOT LIKE '%.txt' ORDER BY docid LIMIT " + numberOfPagesToGet;
+
+        try {
+            Statement statement = connectionDBhandler.createStatement();
+            ResultSet rs = statement.executeQuery(sqlQuery);
+            while(rs.next()){
+                resultList.add(rs.getString(1));
+            }
+            return resultList;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return resultList;
     }
 
     public Boolean isNullTable(String tableName) throws SQLException {
@@ -489,7 +490,6 @@ public class  DBhandler {
     }
 
     protected int getNumberOfTermOccurances(String term) throws SQLException{
-        System.out.println("INSIDE DBhandler.getNumberOfTermOccurances");
         String getNumberOfTermOccurances = "SELECT COUNT (*) FROM features WHERE term = '" + term + "'";
         try(Connection connection = DriverManager.getConnection(dbUrl, user, password)){
             connection.setAutoCommit(false);
@@ -534,4 +534,56 @@ public class  DBhandler {
         }
         return -1;
     }
+
+    protected List<String> getCrawledURLs(){
+        List<String> result = new ArrayList<>();
+
+        String sqlQuery = "SELECT url FROM documents WHERE crawled_on_date IS NOT NULL";
+
+        try {
+            ResultSet rs = statementDBhandler.executeQuery(sqlQuery);
+            while(rs.next()){
+                result.add(rs.getString(1));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return result;
+    }
+
+    protected int getNumberOfVisitedURLs(){
+        int result = 0;
+
+        String SQL = "SELECT COUNT (*) FROM documents WHERE crawling_status = 'FINISHED'";
+
+        try {
+            ResultSet rs = statementDBhandler.executeQuery(SQL);
+            rs.next();
+            result = rs.getInt(1);
+            return result;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    // Changes temporarily depth to -1, to ensure a lock
+    protected void lock(String url){
+        String SQL = "UPDATE documents "
+                + "SET crawling_status = 'crawling' "
+                + "WHERE url = ?";
+        
+        try{
+            
+            PreparedStatement preparedStatement = connectionDBhandler.prepareStatement(SQL);
+            preparedStatement.setString(1, url);
+            preparedStatement.executeUpdate();
+            preparedStatement.close();
+            connectionDBhandler.commit();
+        } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
+        }
+    }
+
 }

@@ -2,12 +2,11 @@ package com.grgrie;
 
 import java.net.*;
 import java.sql.SQLException;
-import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.Callable;
 
-public class Crawler implements Runnable {
+public class Crawler implements Callable {
 
   private int maxDepth;
   private int currentDepth;
@@ -15,9 +14,11 @@ public class Crawler implements Runnable {
   private static int numberOfCrawledDocuments = 0;
   private boolean isAllowedToLeaveDomain;
 
+  private static List<String> visitedURLs = new ArrayList<>();
+  private static List<String> foundURLs = new ArrayList<>();
 
-  private URL currentUrl;
-  private String encoding = "ISO-8859-1";
+  //private String encoding = "ISO-8859-1";
+  private String encoding = "UTF-8";
   private String startURL;
 
   private Indexer indexer;
@@ -26,16 +27,15 @@ public class Crawler implements Runnable {
   public  Crawler (String startUrl, int maxDepth, DBhandler dbHandler){
     this.maxDepth = maxDepth;
     this.dbHandler = dbHandler;
-    this.startURL = startUrl;
+    this.startURL = startUrl;    
     numberOfCrawledDocuments = 0;
     this.indexer = new Indexer(encoding, dbHandler);
   }
 
-  public  Crawler (String startUrl, int maxDepth, DBhandler dbHandler, int maxDocumentsToCrawl){
-    this.maxDepth = maxDepth;
+  public  Crawler (String startUrl, DBhandler dbHandler, int maxDocumentsToCrawl){
     this.dbHandler = dbHandler;
     this.startURL = startUrl;
-    this.numberOfCrawledDocuments = maxDocumentsToCrawl;
+    this.maxDocumentsToCrawl = maxDocumentsToCrawl;
     this.indexer = new Indexer(encoding, dbHandler);
   }
 
@@ -50,38 +50,59 @@ public class Crawler implements Runnable {
   }
 
   public  Crawler (String startURL, int maxDepth, int maxDocumentsToCrawl, boolean isAllowedToLeaveDomain, DBhandler dbHandler){
-    this(startURL, maxDepth, maxDocumentsToCrawl, dbHandler);
+    this.startURL = startURL;
+    this.maxDepth = maxDepth;
+    if(maxDocumentsToCrawl != 0) this.maxDocumentsToCrawl = maxDocumentsToCrawl;
     this.isAllowedToLeaveDomain = isAllowedToLeaveDomain;
+    this.dbHandler = dbHandler;
+    this.indexer = new Indexer(encoding, dbHandler);
   }
 
-
-
   @Override
-  public void run() {
+  public String call() {
     try {
       if(dbHandler.isNullTable("documents")){                   // If documents table is empty
-        //System.out.println("Inside FIRST if in Crawler.run()");
         currentDepth = 0;
-        storeLinkInDB(startURL, true, currentDepth);         // Then just store links in DB and call cycle for queue. 
+        storeLinkInDB(startURL, true, currentDepth);         // Then just store links in DB and call cycle for queue.
+        foundURLs.add(startURL);
       }
-      if(startURL != "-1" && currentDepth <= maxDepth && numberOfCrawledDocuments < maxDocumentsToCrawl) {
-        indexer.indexPage(new URL(startURL), startURL);      // After this operation indexer has all the links and the words
+
+      currentDepth = dbHandler.getCrawledDepth(startURL);
+
+      if(currentDepth <= maxDepth && numberOfCrawledDocuments < maxDocumentsToCrawl) {
+
+        if(visitedURLs.isEmpty()){
+          visitedURLs = dbHandler.getCrawledURLs();
+          foundURLs = visitedURLs;
+        }
+
+        if(numberOfCrawledDocuments == 0)
+          numberOfCrawledDocuments = getNumberOfCrawledDocuments();
+        
+        dbHandler.lock(startURL);
+        indexer.indexPage(new URL(startURL), startURL);      // After this operation indexer object has all the links and the words
         System.out.println("Indexed page " + startURL + " successfully");
         int linkId = dbHandler.getLinkId(startURL);
-        System.out.println("Storing links in DB");
-        dbHandler.storeLinks(indexer.getLinks(), currentDepth, linkId); 
-        System.out.println("Links stored in DB\nStoring words in DB");
+        System.out.println("Storing links in DB with currendDepth = " + currentDepth);
+
+        List<String> newURLs = keepNewURLs(indexer.getLinks());
+        dbHandler.storeLinks(newURLs, currentDepth + 1, linkId); 
+        addToFoundURLs(newURLs);
+
+        System.out.println("Links from " + startURL + "stored in DB. Now storing words in DB");
         dbHandler.storeWords(indexer.getResultMap(), startURL);
-        System.out.println("Words stored in DB");           // Store found words in DB
-        dbHandler.updateCrawledDate(startURL, currentDepth);   
-        currentDepth++;
-        numberOfCrawledDocuments++;  
+        System.out.println("Words from " + startURL + " stored in DB");           // Store found words in DB
+        System.out.println("Current link is\t" + startURL + " and currentDepth is  " + currentDepth);
+        dbHandler.updateCrawledDate(startURL, currentDepth);
+        System.out.println("Crawled date updated");  
+        visitedURLs.add(startURL);
+        numberOfCrawledDocuments++;
       }
-        System.out.println("Crawler run method has finished!!!");
+        System.out.println("Crawler call method has finished!!!");
     } catch (MalformedURLException | SQLException e) {
       e.printStackTrace();
     }
-    
+    return Thread.currentThread().getName();
   }
 
   private void storeLinkInDB(String link, boolean isVisited, int depth){
@@ -90,6 +111,26 @@ public class Crawler implements Runnable {
       } catch (SQLException e) {
         e.printStackTrace();
       }
+  }
+
+  private void addToFoundURLs(List<String> urls){
+    for (String url : urls) {
+      if(!foundURLs.contains(url))
+        foundURLs.add(url);
+    }
+  }
+
+  private List<String> keepNewURLs(List<String> urls){
+    List<String> result = new ArrayList<>();
+    for (String url : urls) {
+      if(!foundURLs.contains(url))
+        result.add(url);
+    }
+    return result;
+  }
+
+  private int getNumberOfCrawledDocuments(){
+    return dbHandler.getNumberOfVisitedURLs();
   }
 
 }

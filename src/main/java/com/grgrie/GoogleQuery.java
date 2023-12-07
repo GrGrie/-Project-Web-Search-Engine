@@ -15,6 +15,8 @@ public class GoogleQuery {
     private List<String> inputANDstringList;
     private boolean isConjunctive;
     private int numberOfTopResults;
+
+    private Stemmer stemmer;
     private DBhandler dbHandler;
 
     
@@ -38,19 +40,23 @@ public class GoogleQuery {
         this.inputStringsList = inputStringsList;
         this.isConjunctive = isConjunctive;
         this.numberOfTopResults = numberOfTopResults;
+        stemmer = new Stemmer();
     }
 
     public GoogleQuery(List<String> inputStringsList, boolean isConjunctive){
         this(inputStringsList, isConjunctive, 20);
+        stemmer = new Stemmer();
     }
 
     public GoogleQuery(List<String> inputStringsList){
         this(inputStringsList, 20);
+        stemmer = new Stemmer();
     }
 
     public GoogleQuery(List<String> inputStringsList, int numberOfTopResults){
         this.inputStringsList = inputStringsList;
         this.numberOfTopResults = numberOfTopResults;
+        stemmer = new Stemmer();
     }
 
     public List<String> executeGoogleQuery() throws SQLException{
@@ -70,7 +76,7 @@ public class GoogleQuery {
                     termWithoutQuotes = currentString.substring(1, currentString.length() - 1);
                 else
                     termWithoutQuotes = currentString;
-                preparedStatement1.setString(i + 1, termWithoutQuotes.toLowerCase()); 
+                preparedStatement1.setString(i + 1, stemWord(termWithoutQuotes)); 
             }
             ResultSet rs = preparedStatement1.executeQuery();
             while(rs.next()){
@@ -109,7 +115,7 @@ public class GoogleQuery {
                     termWithoutQuotes = currentString.substring(1, currentString.length() - 1);
                 else
                     termWithoutQuotes = currentString;
-                preparedStatement1.setString(i + 1, termWithoutQuotes.toLowerCase()); 
+                preparedStatement1.setString(i + 1, stemWord(termWithoutQuotes)); 
             }
             ResultSet rs = preparedStatement1.executeQuery();
             while(rs.next()){
@@ -146,7 +152,7 @@ public class GoogleQuery {
                     termWithoutQuotes = currentString.substring(1, currentString.length() - 1);
                 else
                     termWithoutQuotes = currentString;
-                preparedStatement1.setString(i + 1, termWithoutQuotes.toLowerCase());
+                preparedStatement1.setString(i + 1, stemWord(termWithoutQuotes));
             }  
 
             ResultSet rs = preparedStatement1.executeQuery();
@@ -187,7 +193,7 @@ public class GoogleQuery {
                     termWithoutQuotes = currentString.substring(1, currentString.length() - 1);
                 else
                     termWithoutQuotes = currentString;
-                preparedStatement1.setString(i + 1, termWithoutQuotes.toLowerCase());
+                preparedStatement1.setString(i + 1, stemWord(termWithoutQuotes));
             }  
 
             ResultSet rs = preparedStatement1.executeQuery();
@@ -287,6 +293,12 @@ public class GoogleQuery {
 // SELECT url, words.tfidf FROM (SELECT docid, SUM(tfidf) tfidf FROM features WHERE features.term IN ('calculu', 'averag') GROUP BY docid ORDER BY tfidf DESC) AS words JOIN documents ON documents.docid = words.docid ORDER BY tfidf DESC
         System.out.println(sqlQuerry);
         return sqlQuerry;
+    }
+
+    private String stemWord(String word){
+        stemmer.add(word.toLowerCase().toCharArray(), word.length());
+        stemmer.stem();
+        return stemmer.toString();
     }
 
 }

@@ -39,6 +39,7 @@ public class Indexer {
 
     protected List<String> links = new ArrayList<>();
     private ArrayList<String> bannedWords = new ArrayList<>();
+    private List<String> tmpParsingResults;
     private Map<String, Integer> resultMap;
     private DBhandler dbHandler;
     private String encoding;
@@ -69,12 +70,8 @@ public class Indexer {
         if(baseUrl.indexOf("/", 8) != -1) this.baseUrl = baseUrl.substring(0, baseUrl.indexOf("/", 8));
         else this.baseUrl = baseUrl;
         
-        try {
-            System.out.println("Indexer class :: Starting to parse the page");
-            parse();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        System.out.println("Indexer class :: Starting to parse the page");
+        parse();
     }
 
   class Parser extends HTMLEditorKit.ParserCallback {
@@ -106,7 +103,7 @@ public class Indexer {
               address = baseUrl + address;
             } else if(!address.contains("/") && !baseUrl.contains(address)){  
               address = baseUrl + "/" + address;
-            } else if("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".contains(address.substring(0,1)) && !address.startsWith("http")){
+            } else if(address.length() != 0 && "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".contains(address.substring(0,1)) && !address.startsWith("http")){
               address = baseUrl + "/" + address;
             }
             if(address.startsWith("../")){
@@ -177,25 +174,28 @@ public class Indexer {
   }
 }
   
-  public void parse() throws IOException {
+  public void parse() {
     GetterParser kit = new GetterParser();
     HTMLEditorKit.Parser parser = kit.getParser();
 
-    URLConnection urlConnection = url.openConnection();
-    //urlConnection.setDoInput(true);
-    //urlConnection.setRequestProperty("User-Agent", "Chrome");
-    InputStream in = urlConnection.getInputStream();
-    InputStreamReader inputReader = new InputStreamReader(in, encoding);
-    HTMLEditorKit.ParserCallback parserCallback = new Parser();
-
-    System.out.println("In Indexer -> Parser starting parser.pasrse()");
+    URLConnection urlConnection;
+    try {
+      urlConnection = url.openConnection();
+      urlConnection.setRequestProperty("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.155 Safari/537.36");
+      InputStream in = urlConnection.getInputStream();
+      InputStreamReader inputReader = new InputStreamReader(in, "UTF-8");
+      HTMLEditorKit.ParserCallback parserCallback = new Parser();
+      parser.parse(inputReader, parserCallback, true);
+      tmpParsingResults = stemIt(parsedString);
+    } catch (IOException e) {
+      System.out.println("|*| Error in Indexer.parse() |*|");
+      e.printStackTrace();
+    }    
     
-    parser.parse(inputReader, parserCallback, true);
-    System.out.println("Finished parser.parse()");
-    List<String> result = stemIt(parsedString);
     Map<String, Integer> resultMap = new HashMap<>();
-    for (String string : result) {
-      if(resultMap.containsKey(string)){
+    for (String string : tmpParsingResults) {
+      string = string.replaceAll("\\s+","");
+      if(resultMap.containsKey(string.strip()) && string != ""){
         resultMap.replace(string, resultMap.get(string) + 1);
       } else {
         resultMap.put(string, 1);
@@ -239,6 +239,7 @@ public class Indexer {
         bannedWords.add(line);
     }
     } catch (FileNotFoundException e) {
+      System.out.println("|*| Error in Indexer.fillBannedWords()|*|");
       e.printStackTrace();
     }
   }
@@ -264,6 +265,14 @@ public class Indexer {
 
   public Map<String, Integer> getResultMap(){
     return this.resultMap;
+  }
+
+  public static String getDomainName(String url){
+    String result = url;
+
+    if(result.indexOf("/", 8) != -1) result = result.substring(0, url.indexOf("/", 8));
+
+    return result;
   }
 }
 
