@@ -291,7 +291,7 @@ public class GoogleQuery {
             
         }
 // SELECT url, words.tfidf FROM (SELECT docid, SUM(tfidf) tfidf FROM features WHERE features.term IN ('calculu', 'averag') GROUP BY docid ORDER BY tfidf DESC) AS words JOIN documents ON documents.docid = words.docid ORDER BY tfidf DESC
-        System.out.println(sqlQuerry);
+        //System.out.println(sqlQuerry);
         return sqlQuerry;
     }
 

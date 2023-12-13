@@ -141,8 +141,13 @@ public class App
             //}
            
         }
-
         executorService.shutdown();
+        try {
+            executorService.awaitTermination(1000, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            System.out.println("|*| App.crawl.executorService.awaitTermination error |*|");
+            e.printStackTrace();
+        }
     }
 
     protected void updateTFIDF(){
@@ -159,7 +164,7 @@ public class App
     }
 
     protected List<String> googleSearch(String query){
-        init();
+        if(startURL == null) init();
         
         List<String> findGoogle = new ArrayList<>();
         

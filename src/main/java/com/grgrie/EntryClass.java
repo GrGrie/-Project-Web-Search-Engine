@@ -10,7 +10,7 @@ public class EntryClass {
         //app.crawl("https://www.heapsort.org/");
         app.emptyDatabase("dbis");
         app.crawl("https://www.cs.rptu.de/en/");
-        //app.updateTFIDF();
-        //Indexer.printList(app.googleSearch("algebra geometr", true));
+        app.updateTFIDF();
+        Indexer.printList(app.googleSearch("informatik", false));
     }
 }
