@@ -8,9 +8,9 @@ public class EntryClass {
         app.setMaxNumberOfDocuments(10);       // 0 by default, representing any number of documents
         app.setIsAllowedToLeaveDomain(true); // True by default
         //app.crawl("https://www.heapsort.org/");
-        app.emptyDatabase("dbis");
-        app.crawl("https://www.cs.rptu.de/en/");
+        //app.emptyDatabase("dbis");
+        //app.crawl("https://www.cs.rptu.de/en/");
         app.updateTFIDF();
-        Indexer.printList(app.googleSearch("informatik", false));
+        //Indexer.printList(app.googleSearch("informatik", false));
     }
 }

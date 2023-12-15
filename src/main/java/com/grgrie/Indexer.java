@@ -153,7 +153,7 @@ public class Indexer {
       if(text[i] != ' ' && text[i] != ',' && text[i] != '.' && text[i] != ':' && text[i] != ';' && text[i] != '|' && text[i] != '[' && text[i] != '&' && text[i] != '!'
       && text[i] != ']' && text[i] != '"' && text[i] != '?' && text[i] != '©' && text[i] != '>' && text[i] != '<' && text[i] != '“' && text[i] != '„' && text[i] != '('
       && text[i] != ')' && text[i] != '{' && text[i] != '}' && text[i] != '=' && text[i] != '\'' && text[i] != '\"' && text[i] != '+' && text[i] != '%'
-      && text[i] != '*' && text[i] != '$' && text[i] != '/' && text[i] != '@')
+      && text[i] != '*' && text[i] != '$' && text[i] != '/' && text[i] != '@') 
           parsed += text[i];
       else{
         text[i] = '\n';

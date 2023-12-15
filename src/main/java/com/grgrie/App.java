@@ -150,17 +150,22 @@ public class App
         }
     }
 
+    // Was replaced by another implementation, that updates tf_idf in Database, without pulling and pushing data back and forth
+    // protected void updateTFIDF(String table){
+    //     try {
+    //         int totalNumberOfDocuments = dbHandler.getTotalNumberOfDocuments();
+    //         List<String> terms = dbHandler.getTerms();
+    //         for (String term : terms) {
+    //             dbHandler.updateTFIDF(term, totalNumberOfDocuments);
+    //             System.out.println("Updated TFIDF value of " + term);
+    //         }
+    //     } catch (SQLException e) {
+    //         e.printStackTrace();
+    //     }
+    // }
+
     protected void updateTFIDF(){
-        try {
-            int totalNumberOfDocuments = dbHandler.getTotalNumberOfDocuments();
-            List<String> terms = dbHandler.getTerms();
-            for (String term : terms) {
-                dbHandler.updateTFIDF(term, totalNumberOfDocuments);
-                System.out.println("Updated TFIDF value of " + term);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        dbHandler.updateTFIDF();
     }
 
     protected List<String> googleSearch(String query){

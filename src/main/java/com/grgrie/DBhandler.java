@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+//TODO: Reading database credentials as a separate file
 import javax.swing.event.SwingPropertyChangeSupport;
 
 import org.postgresql.jdbc2.ArrayAssistantRegistry;
@@ -266,7 +266,8 @@ public class  DBhandler {
             PreparedStatement statement = connection.prepareStatement("INSERT INTO features (docid, term, term_frequency) VALUES (?, ?, ?)");
             statement.setInt(1, linkId);
             statement.setString(2, word);
-            double term_frequency = 1 + ((double) wordsMap.get(word)/ (double) sumOfWords);
+            //double term_frequency = Math.log(1 + ((double) wordsMap.get(word)/ (double) sumOfWords));
+            double term_frequency = wordsMap.get(word);
             statement.setDouble(3, term_frequency);
             statement.executeUpdate();               
            }
@@ -409,36 +410,51 @@ public class  DBhandler {
         }
   }
 
-    public void updateTFIDF(String term, int totalNumberOfDocuments) throws SQLException{
-        String getTotalDocumentsCount = "SELECT COUNT(*) FROM features WHERE term = ?";
-        String setTDIDF = "UPDATE features"
-                        + " SET tfidf = ?"
-                        + " WHERE term = ?";
-        
-        try(Connection connection = DriverManager.getConnection(dbUrl, user, password)){
-            connection.setAutoCommit(false);
-        try (
-            PreparedStatement preparedStatement1 = connection.prepareStatement(getTotalDocumentsCount);
-            PreparedStatement preparedStatement2 = connection.prepareStatement(setTDIDF)) {
-
-            preparedStatement1.setString(1, term);
-            ResultSet rs = preparedStatement1.executeQuery();
-            rs.next();
-            int containingDocumentsCount = rs.getInt(1);
-
-            preparedStatement2.setDouble(1, Math.log(totalNumberOfDocuments/containingDocumentsCount));
-            preparedStatement2.setString(2, term);
-            preparedStatement2.executeUpdate();
-        
-            connection.commit();
-            connection.close();
-        } catch (SQLException ex) {
-            connection.rollback();
-            connection.close();
-            System.out.println(ex.getMessage());
-        }
+    public void updateTFIDF(){
+        String SQL = "UPDATE features " 
+                    +"SET tfidf = compute.tf_idf FROM "
+                    +"(SELECT t1.id, t1.docid, t1.term, t1.tf * t2.idf as tf_idf FROM "
+                    +   "(SELECT id, docid, term, 1 + LOG(features.term_frequency) as tf FROM features GROUP BY docid, id, term, features.term_frequency) t1 "
+                    +   "JOIN "
+                    +   "(SELECT term, LOG(1 + N.numberOfAllDocs/1 + COUNT(docid)::float) as idf FROM features, (SELECT COUNT(DISTINCT docid) as numberOfAllDocs FROM features) N GROUP BY term, N.numberOfAllDocs ) t2 "
+                    +"ON t1.term = t2.term ORDER BY tf_idf DESC) compute WHERE features.id = compute.id";
+        try {
+            statementDBhandler.executeUpdate(SQL);
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
+
+    // Was replaced by another implementation, that updates tf_idf in Database, without pulling and pushing data back and forth
+    // public void updateTFIDF(String term, int totalNumberOfDocuments) throws SQLException{
+    //     String getTotalDocumentsCount = "SELECT COUNT(*) FROM features WHERE term = ?";
+    //     String setTDIDF = "UPDATE features"
+    //                     + " SET tfidf = ?"
+    //                     + " WHERE term = ?";
+    //     try(Connection connection = DriverManager.getConnection(dbUrl, user, password)){
+    //         connection.setAutoCommit(false);
+    //     try (
+    //         PreparedStatement preparedStatement1 = connection.prepareStatement(getTotalDocumentsCount);
+    //         PreparedStatement preparedStatement2 = connection.prepareStatement(setTDIDF)) {
+
+    //         preparedStatement1.setString(1, term);
+    //         ResultSet rs = preparedStatement1.executeQuery();
+    //         rs.next();
+    //         int containingDocumentsCount = rs.getInt(1);
+
+    //         preparedStatement2.setDouble(1, Math.log(totalNumberOfDocuments/containingDocumentsCount));
+    //         preparedStatement2.setString(2, term);
+    //         preparedStatement2.executeUpdate();
+        
+    //         connection.commit();
+    //         connection.close();
+    //     } catch (SQLException ex) {
+    //         connection.rollback();
+    //         connection.close();
+    //         System.out.println(ex.getMessage());
+    //     }
+    //     }
+    // }
 
     public List<String> getTerms() throws SQLException{
         List<String> result = new ArrayList<>();
