@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,11 +39,10 @@ public class Indexer {
     private Boolean isInAHREF = false;
 
     protected List<String> links = new ArrayList<>();
+    private String encoding;
     private ArrayList<String> bannedWords = new ArrayList<>();
     private List<String> tmpParsingResults;
     private Map<String, Integer> resultMap;
-    private DBhandler dbHandler;
-    private String encoding;
     private String baseUrl;
     private String partialUrl;
     URL url;
@@ -55,7 +55,6 @@ public class Indexer {
 
     public Indexer (String encoding, DBhandler dbHandler){
       this(encoding);
-      this.dbHandler = dbHandler;
     }
 
     protected void indexPage(URL url, String baseUrl){
@@ -150,22 +149,18 @@ public class Indexer {
   private void parseHTML(char[] text){ 
     String parsed = "";
     for(int i = 0; i < text.length; i++){
-      if(text[i] != ' ' && text[i] != ',' && text[i] != '.' && text[i] != ':' && text[i] != ';' && text[i] != '|' && text[i] != '[' && text[i] != '&' && text[i] != '!'
-      && text[i] != ']' && text[i] != '"' && text[i] != '?' && text[i] != '©' && text[i] != '>' && text[i] != '<' && text[i] != '“' && text[i] != '„' && text[i] != '('
-      && text[i] != ')' && text[i] != '{' && text[i] != '}' && text[i] != '=' && text[i] != '\'' && text[i] != '\"' && text[i] != '+' && text[i] != '%'
-      && text[i] != '*' && text[i] != '$' && text[i] != '/' && text[i] != '@') 
+      if(Character.isLetterOrDigit(text[i]))
           parsed += text[i];
       else{
-        text[i] = '\n';
-        if(i != 0 && text[i-1] != '\n') {
-          parsedString += "\n";
+        if(i != 0 && text[i-1] != ' ') {
+          parsedString += " ";
           parsedString = parsedString + parsed;
           parsed = "";
         }
       }
       if(i == text.length - 1) {                                              // Handling last word on the page case
-        parsedString += '\n';
-        if(parsedString != null && !parsedString.equals("\n")){
+        parsedString += ' ';
+        if(parsedString != null && !parsedString.equals(" ")){
           parsedString = parsedString + parsed;
           parsed = ""; 
         }
@@ -193,9 +188,10 @@ public class Indexer {
     }    
     
     Map<String, Integer> resultMap = new HashMap<>();
+    List<String> emptySpaces = Arrays.asList("", " ", "\n", "\\s+");
+    tmpParsingResults.removeAll(emptySpaces);
     for (String string : tmpParsingResults) {
-      string = string.replaceAll("\\s+","");
-      if(resultMap.containsKey(string.strip()) && string != ""){
+      if(resultMap.containsKey(string.strip()) && string != "" && string != " "){
         resultMap.replace(string, resultMap.get(string) + 1);
       } else {
         resultMap.put(string, 1);
@@ -206,7 +202,7 @@ public class Indexer {
 
   private List<String> stemIt(String stringToStem) throws IOException{
       List<String> fileStrings = new ArrayList<>();
-      String[] subStrings = parsedString.split("\n");
+      String[] subStrings = parsedString.split(" ");
       Stemmer stem = new Stemmer();
       char[] stringToCharArray;
       for(String subString : subStrings){
