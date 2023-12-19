@@ -5,6 +5,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
@@ -18,6 +20,10 @@ import java.util.Scanner;
 import javax.swing.text.MutableAttributeSet;
 import javax.swing.text.html.HTML;
 import javax.swing.text.html.HTMLEditorKit;
+import javax.swing.text.html.HTML.Attribute;
+
+import org.w3c.tidy.Tidy;
+
 import com.shekhargulati.urlcleaner.UrlCleaner;
 
 
@@ -39,6 +45,7 @@ public class Indexer {
     private Boolean isInAHREF = false;
 
     protected List<String> links = new ArrayList<>();
+    private final Tidy tidy = new Tidy();
     private String encoding;
     private ArrayList<String> bannedWords = new ArrayList<>();
     private List<String> tmpParsingResults;
@@ -46,10 +53,13 @@ public class Indexer {
     private String baseUrl;
     private String partialUrl;
     URL url;
-
-
+      
     public Indexer (String encoding){
       fillBannedWords(bannedWords);
+      tidy.setXHTML(true);
+      tidy.setInputEncoding("UTF-8");
+      tidy.setQuiet(true);
+      tidy.setShowWarnings(false);
       this.encoding = encoding;
     }
 
@@ -73,7 +83,7 @@ public class Indexer {
         parse();
     }
 
-  class Parser extends HTMLEditorKit.ParserCallback {
+  class IndexParser extends HTMLEditorKit.ParserCallback {
 
     public void handleStartTag(HTML.Tag tag, MutableAttributeSet attributes, int position) {
 
@@ -90,11 +100,12 @@ public class Indexer {
       if(tag == HTML.Tag.UL) isInUL = true;
 
       // Handling HREF links
-      if(tag == HTML.Tag.A || tag == HTML.Tag.LI) {
+      
+      if(tag == HTML.Tag.A || tag == HTML.Tag.LI || tag == HTML.Tag.UL) {
         isInA = true;
-        if(attributes.getAttribute(HTML.Attribute.HREF) != null){
+        if(attributes.getAttribute(Attribute.HREF) != null){
           isInAHREF = true;
-          String address = (String) attributes.getAttribute(HTML.Attribute.HREF);
+          String address = (String) attributes.getAttribute(Attribute.HREF);
           if(!address.startsWith("#") && !address.startsWith("./") && !address.startsWith("mailto:") && !address.startsWith("/.")){
             if(address.contains(" "))
               address = address.replaceAll(" ", "%20");
@@ -179,22 +190,34 @@ public class Indexer {
       urlConnection.setRequestProperty("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.155 Safari/537.36");
       InputStream in = urlConnection.getInputStream();
       InputStreamReader inputReader = new InputStreamReader(in, "UTF-8");
-      HTMLEditorKit.ParserCallback parserCallback = new Parser();
-      parser.parse(inputReader, parserCallback, true);
+      HTMLEditorKit.ParserCallback parserCallback = new IndexParser();
+      
+
+      // Here I JTidy to convert HTML to String, so direct HTML read wouldn't skip JS sections
+      StringWriter stringWriter = new StringWriter();
+      tidy.parse(inputReader, stringWriter);
+      StringBuffer stringBuffer = stringWriter.getBuffer();
+      String htmlString = stringBuffer.toString();
+      //System.out.println("\nParsed by JTidy:\n" + htmlString);
+
+
+      parser.parse(new StringReader(htmlString), parserCallback, true);
       tmpParsingResults = stemIt(parsedString);
     } catch (IOException e) {
       System.out.println("|*| Error in Indexer.parse() |*|");
       e.printStackTrace();
-    }    
-    
+    } 
+
     Map<String, Integer> resultMap = new HashMap<>();
-    List<String> emptySpaces = Arrays.asList("", " ", "\n", "\\s+");
-    tmpParsingResults.removeAll(emptySpaces);
-    for (String string : tmpParsingResults) {
-      if(resultMap.containsKey(string.strip()) && string != "" && string != " "){
-        resultMap.replace(string, resultMap.get(string) + 1);
-      } else {
-        resultMap.put(string, 1);
+    if(tmpParsingResults != null){
+      List<String> emptySpaces = Arrays.asList("", " ", "\n", "\\s+");
+        tmpParsingResults.removeAll(emptySpaces);
+        for (String string : tmpParsingResults) {
+          if(resultMap.containsKey(string.strip()) && string != "" && string != " "){
+            resultMap.replace(string, resultMap.get(string) + 1);
+          } else {
+            resultMap.put(string, 1);
+          }
       }
     }
     this.resultMap = resultMap;
@@ -270,6 +293,8 @@ public class Indexer {
 
     return result;
   }
+
+  
 }
 
 

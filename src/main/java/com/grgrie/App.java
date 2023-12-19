@@ -35,7 +35,7 @@ public class App
 
 
     private boolean gotInside = false;
-    private static int numberOfThreads = 4;
+    private int numberOfThreads = 4;
     
     public App(){
         init();
@@ -96,8 +96,6 @@ public class App
           urlQueue.add(startUrl);  
         }
         
-
-        //TODO: Decide what to do with isAllowedToLeaveDomain (it should be searched in DB properly)
         String url = "";
         
         while(!urlQueue.isEmpty()){
@@ -150,22 +148,9 @@ public class App
         }
     }
 
-    // Was replaced by another implementation, that updates tf_idf in Database, without pulling and pushing data back and forth
-    // protected void updateTFIDF(String table){
-    //     try {
-    //         int totalNumberOfDocuments = dbHandler.getTotalNumberOfDocuments();
-    //         List<String> terms = dbHandler.getTerms();
-    //         for (String term : terms) {
-    //             dbHandler.updateTFIDF(term, totalNumberOfDocuments);
-    //             System.out.println("Updated TFIDF value of " + term);
-    //         }
-    //     } catch (SQLException e) {
-    //         e.printStackTrace();
-    //     }
-    // }
-
     protected void updateTFIDF(){
         dbHandler.updateTFIDF();
+        System.out.println("TFIDF successfully updated");
     }
 
     protected List<String> googleSearch(String query){
@@ -174,7 +159,6 @@ public class App
         List<String> findGoogle = new ArrayList<>();
         
         // Check if allowed to leave domain
-        //TODO : implement DBhandler method, that returns sites only from this domain
         boolean isAllowedToLeaveDomain = true;
         String domain = "";
         if(query.contains("site:")){
@@ -220,7 +204,6 @@ public class App
         List<String> findGoogle = new ArrayList<>();
         
         // Check if allowed to leave domain
-        //TODO : implement DBhandler method, that returns sites only from this domain
         boolean isAllowedToLeaveDomain = true;
         String domain = "";
         if(query.contains("site:")){
@@ -297,6 +280,14 @@ public class App
         return "Successfully finished given task!";
     }
 
+    public void setNumberOfThreads(int numberOfThreads){
+        this.numberOfThreads = numberOfThreads;
+    }
+
+    public int getNumberOfThreads(){
+        return this.numberOfThreads;
+    }
+    
     public void setMaxDepth(int maxDepth){
         this.maxDepth = maxDepth;
     }

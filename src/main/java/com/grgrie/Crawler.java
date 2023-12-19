@@ -69,6 +69,9 @@ public class Crawler implements Callable {
 
       currentDepth = dbHandler.getCrawledDepth(startURL);
 
+      if(numberOfCrawledDocuments == 0)
+          numberOfCrawledDocuments = getNumberOfCrawledDocuments();
+
       if(currentDepth <= maxDepth && numberOfCrawledDocuments < maxDocumentsToCrawl) {
 
         if(visitedURLs.isEmpty()){
@@ -76,25 +79,29 @@ public class Crawler implements Callable {
           foundURLs = visitedURLs;
         }
 
-        if(numberOfCrawledDocuments == 0)
-          numberOfCrawledDocuments = getNumberOfCrawledDocuments();
+        System.out.println("Number of Crawled Documents is :: " + numberOfCrawledDocuments + " and maxDOcumentsToCrawl is :: " + maxDocumentsToCrawl);
         
         dbHandler.lock(startURL);
         indexer.indexPage(new URL(startURL), startURL);      // After this operation indexer object has all the links and the words
         System.out.println("Indexed page " + startURL + " successfully");
         int linkId = dbHandler.getLinkId(startURL);
-        System.out.println("Storing links in DB with currendDepth = " + currentDepth);
+        System.out.println("Storing links from in DB with depth = " + currentDepth);
 
         List<String> newURLs = keepNewURLs(indexer.getLinks());
+        
+        // System.out.println("Found links from link \t" + startURL);
+        // System.out.println();
+        // Indexer.printList(newURLs);
+        // System.out.println();
+        
         dbHandler.storeLinks(newURLs, currentDepth + 1, linkId); 
         addToFoundURLs(newURLs);
 
-        System.out.println("Links from " + startURL + "stored in DB. Now storing words in DB");
+        System.out.println("Links from " + startURL + " stored in DB. Now storing words in DB");
         dbHandler.storeWords(indexer.getResultMap(), startURL);
         System.out.println("Words from " + startURL + " stored in DB");           // Store found words in DB
         System.out.println("Current link is\t" + startURL + " and currentDepth is  " + currentDepth);
         dbHandler.updateCrawledDate(startURL, currentDepth);
-        System.out.println("Crawled date updated");  
         visitedURLs.add(startURL);
         numberOfCrawledDocuments++;
       }

@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.naming.spi.DirStateFactory.Result;
 //TODO: Reading database credentials as a separate file
 import javax.swing.event.SwingPropertyChangeSupport;
 
@@ -82,12 +84,12 @@ public class  DBhandler {
                     + "id SERIAL, "
                     + "docid INT, "
                     + "term VARCHAR(50), "
-                    + "term_frequency numeric(13,10), "
+                    + "term_frequency INT, "
                     + "tfidf numeric(13,10)"
                     + ")";
         String createTableDocuments = "CREATE TABLE documents ("
                     + "docid SERIAL,"
-                    + "url VARCHAR(300),"
+                    + "url VARCHAR(500),"
                     + "crawled_on_date DATE,"
                     + "depth int NOT NULL,"
                     + "UNIQUE (url), "
@@ -144,7 +146,7 @@ public class  DBhandler {
     }
 
     public int getCrawledDepth(String link) throws SQLException{
-        int result = 0;
+        int result;
         String SQL = "SELECT documents.depth FROM documents WHERE documents.url = ?";
 
         try (Connection connection = DriverManager.getConnection(dbUrl, user, password)) {
@@ -226,10 +228,13 @@ public class  DBhandler {
         try {
            // Perform the database operations
            for (String link : links) {
-                PreparedStatement statement = connection.prepareStatement("INSERT INTO documents (url, depth) VALUES (?, ?) ON CONFLICT (url) DO NOTHING", Statement.RETURN_GENERATED_KEYS);
+                if(!link.endsWith("/"))
+                    link += "/";
+                PreparedStatement statement = connection.prepareStatement("INSERT INTO documents (url, depth) VALUES (?, ?) ON CONFLICT (url) DO UPDATE SET depth = LEAST (documents.depth, EXCLUDED.depth)", Statement.RETURN_GENERATED_KEYS);
                 statement.setString(1, link);
                 statement.setInt(2, depth);
                 statement.executeUpdate();
+                //System.out.println("DBhandler.storeLinks :: Storing link:\t" + link);
                 ResultSet resultSet = statement.getGeneratedKeys();
                 if(resultSet.next()){
                     int id = resultSet.getInt(1);
@@ -242,7 +247,7 @@ public class  DBhandler {
            connection.close();
         } catch (SQLException e) {
            // Roll back the transaction
-           System.out.println("DBHANDLER storeLinks ERROR!!!");
+           System.out.println("|*| DBhandler.storeLinks ERROR |*|");
            connection.rollback();
            connection.close();
            throw e;
@@ -285,7 +290,7 @@ public class  DBhandler {
         }
     }
 
-    public void connectLinks(int from_docid, int to_docid) throws SQLException{
+    public synchronized void connectLinks(int from_docid, int to_docid) throws SQLException{
         try (Connection connection = DriverManager.getConnection(dbUrl, user, password)) {
             connection.setAutoCommit(false);
         try {
@@ -299,7 +304,7 @@ public class  DBhandler {
            connection.close();
         } catch (SQLException e) {
            // Roll back the transaction
-           System.out.println("DBHANDLER storeLinks ERROR!!!");
+           System.out.println("DBHANDLER connectLinks ERROR!!!");
            connection.rollback();
            connection.close();
            throw e;
@@ -424,37 +429,6 @@ public class  DBhandler {
             e.printStackTrace();
         }
     }
-
-    // Was replaced by another implementation, that updates tf_idf in Database, without pulling and pushing data back and forth
-    // public void updateTFIDF(String term, int totalNumberOfDocuments) throws SQLException{
-    //     String getTotalDocumentsCount = "SELECT COUNT(*) FROM features WHERE term = ?";
-    //     String setTDIDF = "UPDATE features"
-    //                     + " SET tfidf = ?"
-    //                     + " WHERE term = ?";
-    //     try(Connection connection = DriverManager.getConnection(dbUrl, user, password)){
-    //         connection.setAutoCommit(false);
-    //     try (
-    //         PreparedStatement preparedStatement1 = connection.prepareStatement(getTotalDocumentsCount);
-    //         PreparedStatement preparedStatement2 = connection.prepareStatement(setTDIDF)) {
-
-    //         preparedStatement1.setString(1, term);
-    //         ResultSet rs = preparedStatement1.executeQuery();
-    //         rs.next();
-    //         int containingDocumentsCount = rs.getInt(1);
-
-    //         preparedStatement2.setDouble(1, Math.log(totalNumberOfDocuments/containingDocumentsCount));
-    //         preparedStatement2.setString(2, term);
-    //         preparedStatement2.executeUpdate();
-        
-    //         connection.commit();
-    //         connection.close();
-    //     } catch (SQLException ex) {
-    //         connection.rollback();
-    //         connection.close();
-    //         System.out.println(ex.getMessage());
-    //     }
-    //     }
-    // }
 
     public List<String> getTerms() throws SQLException{
         List<String> result = new ArrayList<>();
@@ -581,6 +555,39 @@ public class  DBhandler {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return result;
+    }
+
+    protected int getNumberOfOutgoingLinks(int linkID){
+        int result = 0;
+
+        String SQL = "SELECT COUNT(*) FROM links WHERE from_id = " + linkID;
+
+        try {
+            ResultSet rs = statementDBhandler.executeQuery(SQL);
+            rs.next();
+            result = rs.getInt(1);
+            return result;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    
+        return result;
+    }
+
+    protected List<Integer> getAllLinksID(){
+        List<Integer> result = new ArrayList<>();
+
+        String SQL = "SELECT DISTINCT from_docid FROM documents";
+        try {
+            ResultSet rs = statementDBhandler.executeQuery(SQL);
+            while(rs.next()){
+                //TODO: Finish implementing getting all links and storing them in LIst
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
         return result;
     }
 
