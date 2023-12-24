@@ -311,6 +311,10 @@ public class App
     public void setIsAllowedToLeaveDomain(boolean isAllowedToLeaveDomain) {
         this.isAllowedToLeaveDomain = isAllowedToLeaveDomain;
     }
+
+    public DBhandler getDBhandler(){
+        return this.dbHandler;
+    }
 }
 
 

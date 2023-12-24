@@ -87,12 +87,13 @@ public class Crawler implements Callable {
         int linkId = dbHandler.getLinkId(startURL);
         System.out.println("Storing links from in DB with depth = " + currentDepth);
 
-        List<String> newURLs = keepNewURLs(indexer.getLinks());
+        //List<String> newURLs = keepNewURLs(indexer.getLinks());
+        List<String> newURLs = indexer.getLinks();
         
-        // System.out.println("Found links from link \t" + startURL);
-        // System.out.println();
-        // Indexer.printList(newURLs);
-        // System.out.println();
+        System.out.println("Amount of found links:" + newURLs.size() + " Found links from link \t" + startURL);
+        System.out.println();
+        Indexer.printList(newURLs);
+        System.out.println();
         
         dbHandler.storeLinks(newURLs, currentDepth + 1, linkId); 
         addToFoundURLs(newURLs);

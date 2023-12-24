@@ -4,6 +4,7 @@ import java.sql.*;
 import java.time.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -93,7 +94,8 @@ public class  DBhandler {
                     + "crawled_on_date DATE,"
                     + "depth int NOT NULL,"
                     + "UNIQUE (url), "
-                    + "crawling_status VARCHAR(20) "
+                    + "crawling_status VARCHAR(20), "
+                    + "pageRank numeric(13,10) "
                     + ");";
         String createTableLinks = "CREATE TABLE links ("
                     + "from_docid int,"
@@ -226,20 +228,25 @@ public class  DBhandler {
         try (Connection connection = DriverManager.getConnection(dbUrl, user, password)) {
             connection.setAutoCommit(false);
         try {
-           // Perform the database operations
-           for (String link : links) {
+           // Perform the database operations            
+            for (String link : links) {
                 if(!link.endsWith("/"))
                     link += "/";
-                PreparedStatement statement = connection.prepareStatement("INSERT INTO documents (url, depth) VALUES (?, ?) ON CONFLICT (url) DO UPDATE SET depth = LEAST (documents.depth, EXCLUDED.depth)", Statement.RETURN_GENERATED_KEYS);
-                statement.setString(1, link);
-                statement.setInt(2, depth);
-                statement.executeUpdate();
-                //System.out.println("DBhandler.storeLinks :: Storing link:\t" + link);
-                ResultSet resultSet = statement.getGeneratedKeys();
-                if(resultSet.next()){
-                    int id = resultSet.getInt(1);
-                    connectLinks(linkId, id);
+                int currentLinkID = getLinkId(link);
+                if(currentLinkID == -1){
+                    PreparedStatement statement = connection.prepareStatement("INSERT INTO documents (url, depth) VALUES (?, ?) ON CONFLICT DO NOTHING", Statement.RETURN_GENERATED_KEYS); //ON CONFLICT (url) DO UPDATE SET depth = LEAST (documents.depth, EXCLUDED.depth)
+                    statement.setString(1, link);
+                    statement.setInt(2, depth);
+                    statement.executeUpdate();
+                    ResultSet resultSet = statement.getGeneratedKeys();
+                    if(resultSet.next()){
+                        int id = resultSet.getInt(1);
+                        connectLinks(linkId, id);   
+                    }    
+                } else {
+                    connectLinks(linkId, currentLinkID);
                 }
+                
            }
 
            // Commit the transaction
@@ -295,7 +302,7 @@ public class  DBhandler {
             connection.setAutoCommit(false);
         try {
            // Perform the database operations
-            PreparedStatement statement = connection.prepareStatement("INSERT INTO links VALUES (?, ?)");
+            PreparedStatement statement = connection.prepareStatement("INSERT INTO links VALUES (?, ?) ON CONFLICT DO NOTHING");
             statement.setInt(1, from_docid);
             statement.setInt(2, to_docid);
             statement.executeUpdate();
@@ -328,7 +335,7 @@ public class  DBhandler {
                 connection.setAutoCommit(false);
             try(Statement statement = connection.createStatement();
                 ResultSet resultSet = statement.executeQuery(SQL)){
-                resultSet.next();
+                if(resultSet.next())
                 id = resultSet.getInt(1); 
             // Commit the transaction
             connection.commit();
@@ -561,7 +568,7 @@ public class  DBhandler {
     protected int getNumberOfOutgoingLinks(int linkID){
         int result = 0;
 
-        String SQL = "SELECT COUNT(*) FROM links WHERE from_id = " + linkID;
+        String SQL = "SELECT COUNT(*) FROM links WHERE from_docid = " + linkID;
 
         try {
             ResultSet rs = statementDBhandler.executeQuery(SQL);
@@ -578,17 +585,50 @@ public class  DBhandler {
     protected List<Integer> getAllLinksID(){
         List<Integer> result = new ArrayList<>();
 
-        String SQL = "SELECT DISTINCT from_docid FROM documents";
+        String SQL = "SELECT DISTINCT to_docid FROM links ORDER BY to_docid";
         try {
             ResultSet rs = statementDBhandler.executeQuery(SQL);
             while(rs.next()){
                 //TODO: Finish implementing getting all links and storing them in LIst
+                result.add(rs.getInt(1));
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
         return result;
+    }
+
+    protected void updatePageRank(double[] pageRanksArray, List<Integer> linkIDs){
+        String SQL = "UPDATE documents "
+                    +"SET pageRank = ? WHERE docid = ?";
+        try {
+            for(int i = 0; i < linkIDs.size(); i++){
+                PreparedStatement preparedStatement = connectionDBhandler.prepareStatement(SQL);
+                preparedStatement.setObject(1, pageRanksArray[i]);
+                preparedStatement.setInt(2, linkIDs.get(i));
+                preparedStatement.executeUpdate();
+                preparedStatement.close();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    protected List<Integer> getOutgoingLinks(int linkID){
+        List<Integer> outgoingLinks = new ArrayList<>();
+        String SQL = "SELECT to_docid FROM links WHERE from_docid = " + linkID;
+
+        try {
+            ResultSet rs = statementDBhandler.executeQuery(SQL);
+            while(rs.next()){
+                outgoingLinks.add(rs.getInt(1));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return outgoingLinks;
     }
 
     // Changes temporarily depth to -1, to ensure a lock

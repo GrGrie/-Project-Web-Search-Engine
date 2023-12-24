@@ -59,6 +59,7 @@ public class Indexer {
       tidy.setXHTML(true);
       tidy.setInputEncoding("UTF-8");
       tidy.setQuiet(true);
+      tidy.setForceOutput(true);
       tidy.setShowWarnings(false);
       this.encoding = encoding;
     }
@@ -126,7 +127,7 @@ public class Indexer {
                 e.printStackTrace();
               }
             }
-              links.add(address);
+              if(!links.contains(address)) links.add(address);
           }
         }        
       }
@@ -274,7 +275,6 @@ public class Indexer {
   }
 
   public List<String> getLinks(){
-    //Indexer.printList(links);
     return links;
   }
 
