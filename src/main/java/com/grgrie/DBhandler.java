@@ -148,7 +148,7 @@ public class  DBhandler {
     }
 
     public int getCrawledDepth(String link) throws SQLException{
-        int result;
+        int result = 0;
         String SQL = "SELECT documents.depth FROM documents WHERE documents.url = ?";
 
         try (Connection connection = DriverManager.getConnection(dbUrl, user, password)) {
@@ -156,8 +156,8 @@ public class  DBhandler {
             try(PreparedStatement statement = connection.prepareStatement(SQL);){
                 statement.setString(1, link);
                 ResultSet rs = statement.executeQuery();
-                rs.next();
-                result = rs.getInt(1);
+                if(rs.next());
+                    result = rs.getInt(1);
                 // Commit the transaction
                 connection.commit();
                 connection.close();
@@ -599,7 +599,7 @@ public class  DBhandler {
         return result;
     }
 
-    protected void updatePageRank(double[] pageRanksArray, List<Integer> linkIDs){
+    protected void updatePagesRank(double[] pageRanksArray, Map<Integer, Integer> linkIDs){
         String SQL = "UPDATE documents "
                     +"SET pageRank = ? WHERE docid = ?";
         try {
@@ -607,6 +607,7 @@ public class  DBhandler {
                 PreparedStatement preparedStatement = connectionDBhandler.prepareStatement(SQL);
                 preparedStatement.setObject(1, pageRanksArray[i]);
                 preparedStatement.setInt(2, linkIDs.get(i));
+                //System.out.println(preparedStatement.toString());
                 preparedStatement.executeUpdate();
                 preparedStatement.close();
             }
@@ -615,9 +616,43 @@ public class  DBhandler {
         }
     }
 
+    protected Map<Integer, Integer> linksToIndexes(){
+        Map<Integer, Integer> answer = new HashMap<>();
+
+        String SQL = "SELECT * FROM links ORDER BY from_docid, to_docid";
+        try {
+            ResultSet rs = statementDBhandler.executeQuery(SQL);
+            int index = 0, first, second;
+            while(rs.next()){
+                first = rs.getInt(1);
+                second = rs.getInt(2);
+                //System.out.println("First is " + first + " , second is " + second + " , and index is " + index);
+                if(!answer.containsKey(first)){
+                    answer.put(first, index);
+                    index++;
+                } else if(!answer.containsKey(second)){
+                    answer.put(second, index);
+                    index++;
+                }
+            }
+        return answer;
+        } catch (SQLException e) {
+            System.out.println("|*| Error in DBhandler.linksToIndexes() |*|");
+            e.printStackTrace();
+        }
+
+        return answer;
+    }
+
+    /**
+     * Return IDs of all links that can be visited from this one. Namely, in DB it is SELECT WHERE from_id = 
+     * {@code linkID}
+     * @param linkID
+     * @return List of integers of all IDs
+    */
     protected List<Integer> getOutgoingLinks(int linkID){
         List<Integer> outgoingLinks = new ArrayList<>();
-        String SQL = "SELECT to_docid FROM links WHERE from_docid = " + linkID;
+        String SQL = "SELECT to_docid FROM links WHERE from_docid = " + linkID + " ORDER BY to_docid";
 
         try {
             ResultSet rs = statementDBhandler.executeQuery(SQL);

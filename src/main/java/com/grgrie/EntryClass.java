@@ -11,7 +11,7 @@ public class EntryClass {
         //app.crawl("https://www.heapsort.org/");
         //app.emptyDatabase("dbis");
         //app.crawl("https://www.cs.rptu.de/en/");
-        //app.crawl("https://rptu.de/en/");
+        //app.crawl("https://informatik.uni-kl.de/en/studium/studierende/");
         //app.crawl("https://www.fachschaft.informatik.uni-kl.de/en/");
         //app.updateTFIDF();
         //Indexer.printList(app.googleSearch("informatik", false));
