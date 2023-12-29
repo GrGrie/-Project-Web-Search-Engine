@@ -666,6 +666,254 @@ public class  DBhandler {
         return outgoingLinks;
     }
 
+    private void createBM25View(){
+        String SQL = "WITH terms AS ( " + //
+                " SELECT unnest(string_to_array(?, ' ')) AS term " + //
+                "), " + //
+                " " + //
+                "term_frequencies AS ( " + //
+                " SELECT docid, features.term, term_frequency AS freq " + //
+                " FROM features " + //
+                " JOIN terms ON features.term = terms.term " + //
+                " GROUP BY docid, features.term, features.term_frequency " + //
+                "), " + //
+                " " + //
+                "inverse_document_frequencies AS ( " + //
+                " SELECT features.term, COUNT(DISTINCT docid) AS num_docs, " + //
+                "      LOG(1 + (COUNT(DISTINCT docid)::float / (SELECT COUNT(DISTINCT docid) FROM features))) AS idf " + //
+                " FROM features " + //
+                " JOIN terms ON features.term = terms.term " + //
+                " GROUP BY features.term " + //
+                "), " + //
+                " " + //
+                "document_lengths AS ( " + //
+                " SELECT docid, COUNT(*) AS length " + //
+                " FROM features " + //
+                " WHERE docid IN (SELECT docid FROM term_frequencies) " + //
+                " GROUP BY docid " + //
+                "), " + //
+                " " + //
+                "average_document_length AS ( " + //
+                " SELECT AVG(length) AS avg_length " + //
+                " FROM document_lengths " + //
+                "), " + //
+                " " + //
+                "bm25_scores AS ( " + //
+                " SELECT  " + //
+                " t.docid,  " + //
+                " t.freq / (t.freq + 1.25 * (1 - 0.75 + 0.75 * (d.length / a.avg_length))) * IDF.idf AS score " + //
+                " FROM term_frequencies t " + //
+                " JOIN inverse_document_frequencies IDF ON t.term = IDF.term " + //
+                " JOIN document_lengths d ON t.docid = d.docid " + //
+                " CROSS JOIN average_document_length a " + //
+                ") " + //
+                " " + //
+                "CREATE VIEW features_bm25 AS SELECT bm25_scores.docid, url,  SUM(score) AS bm25_score " + //
+                "FROM bm25_scores JOIN documents ON bm25_scores.docid = documents.docid " + //
+                "GROUP BY bm25_scores.docid, url " + //
+                "ORDER BY bm25_score DESC;";
+    }
+
+    protected List<String> calculateBM25(String searchString, double b, double k1){
+        List<String> answer = new ArrayList<>();
+        String SQL = "WITH terms AS ( " + //
+                " SELECT unnest(string_to_array(?, ' ')) AS term " + //
+                "), " + //
+                " " + //
+                "term_frequencies AS ( " + //
+                " SELECT docid, features.term, term_frequency AS freq " + //
+                " FROM features " + //
+                " JOIN terms ON features.term = terms.term " + //
+                " GROUP BY docid, features.term, features.term_frequency " + //
+                "), " + //
+                " " + //
+                "inverse_document_frequencies AS ( " + //
+                " SELECT features.term, COUNT(DISTINCT docid) AS num_docs, " + //
+                "      LOG(1 + (COUNT(DISTINCT docid)::float / (SELECT COUNT(DISTINCT docid) FROM features))) AS idf " + //
+                " FROM features " + //
+                " JOIN terms ON features.term = terms.term " + //
+                " GROUP BY features.term " + //
+                "), " + //
+                " " + //
+                "document_lengths AS ( " + //
+                " SELECT docid, COUNT(*) AS length " + //
+                " FROM features " + //
+                " WHERE docid IN (SELECT docid FROM term_frequencies) " + //
+                " GROUP BY docid " + //
+                "), " + //
+                " " + //
+                "average_document_length AS ( " + //
+                " SELECT AVG(length) AS avg_length " + //
+                " FROM document_lengths " + //
+                "), " + //
+                " " + //
+                "bm25_scores AS ( " + //
+                " SELECT  " + //
+                " t.docid,  " + //
+                " t.freq / (t.freq + ? * (1 - ? + ? * (d.length / a.avg_length))) * IDF.idf AS score " + //
+                " FROM term_frequencies t " + //
+                " JOIN inverse_document_frequencies IDF ON t.term = IDF.term " + //
+                " JOIN document_lengths d ON t.docid = d.docid " + //
+                " CROSS JOIN average_document_length a " + //
+                ") " + //
+                " " + //
+                "SELECT bm25_scores.docid, url,  SUM(score) AS bm25_score " + //
+                "FROM bm25_scores JOIN documents ON bm25_scores.docid = documents.docid " + //
+                "GROUP BY bm25_scores.docid, url " + //
+                "ORDER BY bm25_score DESC;";
+
+        try {
+            PreparedStatement preparedStatement = connectionDBhandler.prepareStatement(SQL);
+            preparedStatement.setString(1, searchString);
+            preparedStatement.setDouble(2, k1);
+            preparedStatement.setDouble(3, b);
+            preparedStatement.setDouble(4, b);
+
+            ResultSet rs = preparedStatement.executeQuery();
+            while(rs.next()){
+                answer.add(rs.getString(2));
+            }
+            return answer;
+        } catch (SQLException e) {
+            System.out.println("|*| Error in DBhandler.calculateBM25() |*|");
+            e.printStackTrace();
+        }
+        return answer;
+        
+    }
+
+    protected List<String> calculateBM25(String searchString){
+        List<String> answer = new ArrayList<>();
+        String SQL = "WITH terms AS ( " + //
+                " SELECT unnest(string_to_array(?, ' ')) AS term " + //
+                "), " + //
+                " " + //
+                "term_frequencies AS ( " + //
+                " SELECT docid, features.term, term_frequency AS freq " + //
+                " FROM features " + //
+                " JOIN terms ON features.term = terms.term " + //
+                " GROUP BY docid, features.term, features.term_frequency " + //
+                "), " + //
+                " " + //
+                "inverse_document_frequencies AS ( " + //
+                " SELECT features.term, COUNT(DISTINCT docid) AS num_docs, " + //
+                "      LOG(1 + (COUNT(DISTINCT docid)::float / (SELECT COUNT(DISTINCT docid) FROM features))) AS idf " + //
+                " FROM features " + //
+                " JOIN terms ON features.term = terms.term " + //
+                " GROUP BY features.term " + //
+                "), " + //
+                " " + //
+                "document_lengths AS ( " + //
+                " SELECT docid, COUNT(*) AS length " + //
+                " FROM features " + //
+                " WHERE docid IN (SELECT docid FROM term_frequencies) " + //
+                " GROUP BY docid " + //
+                "), " + //
+                " " + //
+                "average_document_length AS ( " + //
+                " SELECT AVG(length) AS avg_length " + //
+                " FROM document_lengths " + //
+                "), " + //
+                " " + //
+                "bm25_scores AS ( " + //
+                " SELECT  " + //
+                " t.docid,  " + //
+                " t.freq / (t.freq + 1.2 * (1 - 0.75 + 0.75 * (d.length / a.avg_length))) * IDF.idf AS score " + //
+                " FROM term_frequencies t " + //
+                " JOIN inverse_document_frequencies IDF ON t.term = IDF.term " + //
+                " JOIN document_lengths d ON t.docid = d.docid " + //
+                " CROSS JOIN average_document_length a " + //
+                ") " + //
+                " " + //
+                "SELECT bm25_scores.docid, url,  SUM(score) AS bm25_score " + //
+                "FROM bm25_scores JOIN documents ON bm25_scores.docid = documents.docid " + //
+                "GROUP BY bm25_scores.docid, url " + //
+                "ORDER BY bm25_score DESC;";
+
+        try {
+            PreparedStatement preparedStatement = connectionDBhandler.prepareStatement(SQL);
+            preparedStatement.setString(1, searchString);
+
+            ResultSet rs = preparedStatement.executeQuery();
+            while(rs.next()){
+                answer.add(rs.getString(2));
+            }
+            return answer;
+        } catch (SQLException e) {
+            System.out.println("|*| Error in DBhandler.calculateBM25() |*|");
+            e.printStackTrace();
+        }
+        return answer;
+        
+    }
+
+    protected List<String> calculateBM25Rank(String searchString){
+        List<String> answer = new ArrayList<>();
+
+        String SQL = "WITH terms AS ( " + //
+                " SELECT unnest(string_to_array(?, ' ')) AS term " + //
+                "), " + //
+                " " + //
+                "term_frequencies AS ( " + //
+                " SELECT docid, features.term, term_frequency AS freq " + //
+                " FROM features " + //
+                " JOIN terms ON features.term = terms.term " + //
+                " GROUP BY docid, features.term, features.term_frequency " + //
+                "), " + //
+                " " + //
+                "inverse_document_frequencies AS ( " + //
+                " SELECT features.term, COUNT(DISTINCT docid) AS num_docs, " + //
+                "      LOG(1 + (COUNT(DISTINCT docid)::float / (SELECT COUNT(DISTINCT docid) FROM features))) AS idf " + //
+                " FROM features " + //
+                " JOIN terms ON features.term = terms.term " + //
+                " GROUP BY features.term " + //
+                "), " + //
+                " " + //
+                "document_lengths AS ( " + //
+                " SELECT docid, COUNT(*) AS length " + //
+                " FROM features " + //
+                " WHERE docid IN (SELECT docid FROM term_frequencies) " + //
+                " GROUP BY docid " + //
+                "), " + //
+                " " + //
+                "average_document_length AS ( " + //
+                " SELECT AVG(length) AS avg_length " + //
+                " FROM document_lengths " + //
+                "), " + //
+                " " + //
+                "bm25_scores AS ( " + //
+                " SELECT  " + //
+                " t.docid,  " + //
+                " t.freq / (t.freq + 1.2 * (1 - 0.75 + 0.75 * (d.length / a.avg_length))) * IDF.idf AS score " + //
+                " FROM term_frequencies t " + //
+                " JOIN inverse_document_frequencies IDF ON t.term = IDF.term " + //
+                " JOIN document_lengths d ON t.docid = d.docid " + //
+                " CROSS JOIN average_document_length a " + //
+                ") " + //
+                " " + //
+                "SELECT bm25_scores.docid, url,  SUM(score * documents.pageRank) AS score " + //
+                "FROM bm25_scores JOIN documents ON bm25_scores.docid = documents.docid " + //
+                "GROUP BY bm25_scores.docid, url " + //
+                "ORDER BY bm25_score DESC;";
+
+        try {
+            PreparedStatement preparedStatement = connectionDBhandler.prepareStatement(SQL);
+            preparedStatement.setString(1, searchString);
+
+            ResultSet rs = preparedStatement.executeQuery();
+            while(rs.next()){
+                answer.add(rs.getString(2));
+            }
+            return answer;
+        } catch (SQLException e) {
+            System.out.println("|*| Error in DBhandler.calculateBM25() |*|");
+            e.printStackTrace();
+        }
+
+        return answer;
+    }
+    
+    
     // Changes temporarily depth to -1, to ensure a lock
     protected void lock(String url){
         String SQL = "UPDATE documents "

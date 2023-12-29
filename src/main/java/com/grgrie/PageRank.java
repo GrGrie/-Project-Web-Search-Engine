@@ -1,7 +1,8 @@
 package com.grgrie;
 
 import java.sql.SQLException;
-
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +20,7 @@ public class PageRank {
     private Matrix matrix;
     private List<Integer> linkIDs;
     private Map<Integer, Integer> idsToMatrix;
+    private List<Double> ranks;
 
     PageRank(DBhandler dbHandler){
         this.dbHandler = dbHandler;
@@ -58,9 +60,12 @@ public class PageRank {
         
         currentPageRankVector = currentVectorMatrix.transpose().toRowVector();
         //System.out.println(currentPageRankVector);
-        storeRanksInDB(currentPageRankVector.toDenseVector().toArray());
+        ranks = new ArrayList();
+        for (Double double1 : currentPageRankVector) {
+            ranks.add(double1);
+        }
+        //storeRanksInDB(currentPageRankVector.toDenseVector().toArray());
 
-        System.out.println("\n\n");
         //System.out.println(matrix.slice(0, 0, 41, 41));
 
         // System.out.println("CurrentPageRankVector:");
@@ -161,5 +166,15 @@ public class PageRank {
         System.out.println("");
 
     }
+
+    protected Map<Integer, Double> getPageRankAndIDs(){
+        Map<Integer, Double> idANDrank = new HashMap<>();
+        int index = 0;
+        for (Integer linkID : linkIDs) {
+            idANDrank.put(linkID, ranks.get(index++));
+        }
+        return idANDrank;
+    }
+
 
 }

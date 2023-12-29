@@ -3,6 +3,7 @@ package com.grgrie;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -17,6 +18,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
+import javax.print.attribute.SupportedValuesAttribute;
 
 /**
  * Hello world!
@@ -310,6 +313,58 @@ public class App
 
     public void setIsAllowedToLeaveDomain(boolean isAllowedToLeaveDomain) {
         this.isAllowedToLeaveDomain = isAllowedToLeaveDomain;
+    }
+
+    public void calculatePageRank(){
+        PageRank pageRank = new PageRank(this.dbHandler);
+        pageRank.calculatePageRank();
+    }
+
+    public void calculateBM25(String searchString){
+        List<String> searchWords = Arrays.asList(searchString.split(" "));
+        List<String> conjunctiveSearch = new ArrayList<>();
+        String siteOperator = "";
+        for (String string : searchWords) {
+            if(string.startsWith("\"") && string.endsWith("\""))
+                conjunctiveSearch.add(string);
+            if(string.startsWith("site:"))
+                siteOperator = string.substring(5);
+        }
+        List<String> docs;
+        if(conjunctiveSearch.size() != 0) docs = dbHandler.calculateBM25(String.join(" ", conjunctiveSearch));
+        else docs = dbHandler.calculateBM25(searchString);
+        if(docs.size() ==  0){
+            System.out.println("Words not found :c");
+            return;
+        }
+        System.out.println("Your words found in the following links: ");
+        for (String doc : docs) {
+            if(!siteOperator.equals("")){
+                if(doc.startsWith(siteOperator))
+                    System.out.println(doc);
+            } else {
+                System.out.println();
+            }
+            
+        }
+    }
+
+    public void calculateBM25Rank(String searchString){
+        PageRank pageRank = new PageRank(this.dbHandler);
+        pageRank.calculatePageRank();
+        Map<Integer, Double> pageRanks = pageRank.getPageRankAndIDs();
+        
+        List<String> docs = dbHandler.calculateBM25Rank(searchString);
+        if(docs.size() ==  0){
+            System.out.println("Words not found :c");
+            return;
+        }
+        System.out.println("Your words found in the following links: ");
+        for (String doc : docs) {
+            System.out.println(doc);
+        }
+
+
     }
 
     public DBhandler getDBhandler(){

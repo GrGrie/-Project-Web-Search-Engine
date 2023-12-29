@@ -15,9 +15,10 @@ public class EntryClass {
         //app.crawl("https://www.fachschaft.informatik.uni-kl.de/en/");
         //app.updateTFIDF();
         //Indexer.printList(app.googleSearch("informatik", false));
-        
-        PageRank pageRank = new PageRank(app.getDBhandler());
-        pageRank.calculatePageRank();
+
+        //app.calculatePageRank();
+        //app.calculateBM25("informatik cs kaiserslautern computer");
+        //app.calculateBM25Rank("informatik cs");
 
     }
 }
